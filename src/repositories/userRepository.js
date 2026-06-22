@@ -11,6 +11,8 @@ const userRepository = {
   create: (userData) => User.create(userData),
 
   findById: (id) => User.findById(id),
+
+  deleteById: (id) => User.findByIdAndDelete(id),
 };
 
 export default userRepository;
