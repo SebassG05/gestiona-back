@@ -89,6 +89,37 @@ const portalService = {
     return portals.map((portal) => mapPortal(portal, userId, email));
   },
 
+  listMembers: async ({ portalId, userId }) => {
+    const portal = await portalRepository
+      .findById(portalId)
+      .populate('owner', 'username email')
+      .populate('members', 'username email')
+      .lean();
+
+    if (!portal) {
+      const error = new Error('El portal no existe');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const canAccess = portal.members.some((member) => member._id.toString() === userId.toString());
+
+    if (!canAccess) {
+      const error = new Error('No tienes acceso a este portal');
+      error.statusCode = 403;
+      throw error;
+    }
+
+    const ownerId = portal.owner?._id?.toString();
+
+    return portal.members.map((member) => ({
+      id: member._id,
+      username: member.username,
+      email: member.email,
+      role: member._id.toString() === ownerId ? 'owner' : 'member',
+    }));
+  },
+
   getInvitationByCode: async ({ code, email }) => {
     const portal = await portalRepository.findByInviteCode(code).populate('owner', 'username email');
 
