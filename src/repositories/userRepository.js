@@ -8,6 +8,8 @@ const userRepository = {
   findByEmailOrUsername: (email, username) =>
     User.findOne({ $or: [{ email }, { username }] }),
 
+  findByGoogleId: (googleId) => User.findOne({ googleId }),
+
   create: (userData) => User.create(userData),
 
   findById: (id) => User.findById(id),
