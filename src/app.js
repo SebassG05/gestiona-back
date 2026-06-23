@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import authRoutes from './routes/authRoutes.js';
+import portalRoutes from './routes/portalRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import errorHandler from './middlewares/errorHandler.js';
 
@@ -18,6 +19,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/portals', portalRoutes);
 app.use('/api/users', userRoutes);
 
 app.use(errorHandler);
