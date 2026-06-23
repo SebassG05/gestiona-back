@@ -154,6 +154,26 @@ const portalService = {
       invitationStatus: invite.status,
     };
   },
+
+  deleteOwnedPortal: async ({ portalId, userId }) => {
+    const portal = await portalRepository.findById(portalId);
+
+    if (!portal) {
+      const error = new Error('El portal no existe');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (!portal.owner.equals(userId)) {
+      const error = new Error('Solo el propietario puede eliminar este portal');
+      error.statusCode = 403;
+      throw error;
+    }
+
+    await portalRepository.deleteById(portalId);
+
+    return { id: portalId };
+  },
 };
 
 export default portalService;

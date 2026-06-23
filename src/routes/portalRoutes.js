@@ -16,6 +16,7 @@ router.post(
   validateRequest,
   portalController.respondToInvitation
 );
+router.delete('/:portalId', authenticate, portalController.deleteOwnedPortal);
 router.post('/', authenticate, createPortalValidation, validateRequest, portalController.create);
 
 export default router;

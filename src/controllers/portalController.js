@@ -74,6 +74,23 @@ const portalController = {
       next(error);
     }
   },
+
+  deleteOwnedPortal: async (req, res, next) => {
+    try {
+      const result = await portalService.deleteOwnedPortal({
+        portalId: req.params.portalId,
+        userId: req.user.id,
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Portal eliminado correctamente',
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
 };
 
 export default portalController;
