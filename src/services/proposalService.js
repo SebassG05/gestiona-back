@@ -16,6 +16,20 @@ const nullableDate = (value) => {
 
 const optionalResponsable = (value) => (value ? value : null);
 
+const normalizePriority = (value) => {
+  const normalizedValue = String(value || '').trim().toUpperCase();
+  const priorityMap = {
+    A: 'Alta',
+    ALTA: 'Alta',
+    B: 'Media',
+    MEDIA: 'Media',
+    C: 'Baja',
+    BAJA: 'Baja',
+  };
+
+  return priorityMap[normalizedValue] || value;
+};
+
 const buildProposalData = (data) => {
   const lifecycleStatus = data.lifecycleStatus || 'active';
 
@@ -30,7 +44,7 @@ const buildProposalData = (data) => {
     deadlineApertura: nullableDate(data.deadlineApertura),
     fase: data.fase,
     estado: data.estado,
-    prioridad: data.prioridad,
+    prioridad: normalizePriority(data.prioridad),
     responsable: optionalResponsable(data.responsable),
     rolEvenor: data.rolEvenor,
     coordinadorLead: data.coordinadorLead,
