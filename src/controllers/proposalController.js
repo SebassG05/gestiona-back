@@ -52,6 +52,24 @@ const proposalController = {
     }
   },
 
+  createMany: async (req, res, next) => {
+    try {
+      const result = await proposalService.createMany({
+        portalId: req.params.portalId,
+        userId: req.user.id,
+        proposals: req.body.proposals,
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: `${result.count} propuestas importadas correctamente`,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   update: async (req, res, next) => {
     try {
       const proposal = await proposalService.update({

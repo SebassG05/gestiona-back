@@ -2,6 +2,7 @@ import Proposal from '../models/Proposal.js';
 
 const proposalRepository = {
   create: (proposalData) => Proposal.create(proposalData),
+  createMany: (proposalsData) => Proposal.insertMany(proposalsData, { ordered: true }),
   findByIdAndPortal: (proposalId, portalId) =>
     Proposal.findOne({ _id: proposalId, portal: portalId })
       .populate('responsable', 'username email')

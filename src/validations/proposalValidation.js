@@ -29,3 +29,17 @@ export const createProposalValidation = [
 ];
 
 export const updateProposalValidation = createProposalValidation;
+
+export const importProposalsValidation = [
+  body('proposals')
+    .isArray({ min: 1, max: 500 })
+    .withMessage('Debes importar entre 1 y 500 propuestas'),
+  body('proposals.*.nombre')
+    .trim()
+    .isLength({ min: 2, max: 140 })
+    .withMessage('Cada propuesta debe tener un nombre de entre 2 y 140 caracteres'),
+  body('proposals.*.lifecycleStatus')
+    .optional()
+    .isIn(['active', 'draft', 'sent'])
+    .withMessage('El estado interno de una propuesta no es valido'),
+];

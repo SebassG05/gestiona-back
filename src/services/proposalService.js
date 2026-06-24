@@ -1,4 +1,5 @@
 import portalRepository from '../repositories/portalRepository.js';
+import proposalContactRepository from '../repositories/proposalContactRepository.js';
 import proposalRepository from '../repositories/proposalRepository.js';
 
 const nullableNumber = (value) => {
@@ -69,7 +70,18 @@ const getAccessiblePortal = async ({ portalId, userId }) => {
 const proposalService = {
   listByPortal: async ({ portalId, userId }) => {
     await getAccessiblePortal({ portalId, userId });
-    return proposalRepository.findByPortal(portalId);
+    const [proposals, contactCounts] = await Promise.all([
+      proposalRepository.findByPortal(portalId),
+      proposalContactRepository.countByPortal(portalId),
+    ]);
+    const countByProposal = new Map(
+      contactCounts.map((item) => [item._id.toString(), item.count])
+    );
+
+    return proposals.map((proposal) => ({
+      ...proposal,
+      contactCount: countByProposal.get(proposal._id.toString()) || 0,
+    }));
   },
 
   getById: async ({ portalId, proposalId, userId }) => {
@@ -103,6 +115,26 @@ const proposalService = {
     };
   },
 
+  createMany: async ({ portalId, userId, proposals }) => {
+    await getAccessiblePortal({ portalId, userId });
+
+    const proposalsData = proposals.map((data) => ({
+      portal: portalId,
+      createdBy: userId,
+      ...buildProposalData({
+        ...data,
+        lifecycleStatus: data.lifecycleStatus || 'active',
+      }),
+    }));
+
+    const createdProposals = await proposalRepository.createMany(proposalsData);
+
+    return {
+      count: createdProposals.length,
+      ids: createdProposals.map((proposal) => proposal._id.toString()),
+    };
+  },
+
   update: async ({ portalId, proposalId, userId, data }) => {
     await getAccessiblePortal({ portalId, userId });
     const proposal = await proposalRepository.updateByIdAndPortal(
@@ -129,6 +161,8 @@ const proposalService = {
       error.statusCode = 404;
       throw error;
     }
+
+    await proposalContactRepository.deleteByProposal(proposalId, portalId);
 
     return {
       id: proposal._id.toString(),
