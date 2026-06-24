@@ -24,6 +24,12 @@ const proposalSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    lifecycleStatus: {
+      type: String,
+      enum: ['active', 'draft', 'sent'],
+      default: 'active',
+      index: true,
+    },
     nombre: {
       type: String,
       required: [true, 'El nombre de la propuesta es obligatorio'],

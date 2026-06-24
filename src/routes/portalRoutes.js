@@ -5,19 +5,31 @@ import authenticate from '../middlewares/authenticate.js';
 import validateRequest from '../middlewares/validateRequest.js';
 import { respondInvitationValidation } from '../validations/invitationValidation.js';
 import { createPortalValidation } from '../validations/portalValidation.js';
-import { createProposalValidation } from '../validations/proposalValidation.js';
+import {
+  createProposalValidation,
+  updateProposalValidation,
+} from '../validations/proposalValidation.js';
 
 const router = Router();
 
 router.get('/mine', authenticate, portalController.listMine);
 router.get('/invitations/:code', authenticate, portalController.getInvitationByCode);
 router.get('/:portalId/members', authenticate, portalController.listMembers);
+router.get('/:portalId/proposals', authenticate, proposalController.listByPortal);
+router.get('/:portalId/proposals/:proposalId', authenticate, proposalController.getById);
 router.post(
   '/:portalId/proposals',
   authenticate,
   createProposalValidation,
   validateRequest,
   proposalController.create
+);
+router.patch(
+  '/:portalId/proposals/:proposalId',
+  authenticate,
+  updateProposalValidation,
+  validateRequest,
+  proposalController.update
 );
 router.post(
   '/invitations/:code/respond',
