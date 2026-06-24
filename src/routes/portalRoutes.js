@@ -31,6 +31,7 @@ router.patch(
   validateRequest,
   proposalController.update
 );
+router.delete('/:portalId/proposals/:proposalId', authenticate, proposalController.remove);
 router.post(
   '/invitations/:code/respond',
   authenticate,

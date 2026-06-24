@@ -22,6 +22,8 @@ const proposalRepository = {
       .populate('responsable', 'username email')
       .populate('createdBy', 'username email')
       .lean(),
+  deleteByIdAndPortal: (proposalId, portalId) =>
+    Proposal.findOneAndDelete({ _id: proposalId, portal: portalId }).lean(),
 };
 
 export default proposalRepository;

@@ -70,6 +70,24 @@ const proposalController = {
       next(error);
     }
   },
+
+  remove: async (req, res, next) => {
+    try {
+      const proposal = await proposalService.remove({
+        portalId: req.params.portalId,
+        proposalId: req.params.proposalId,
+        userId: req.user.id,
+      });
+
+      return res.json({
+        success: true,
+        message: 'Propuesta eliminada correctamente',
+        data: proposal,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
 };
 
 export default proposalController;

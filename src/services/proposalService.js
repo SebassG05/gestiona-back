@@ -119,6 +119,23 @@ const proposalService = {
 
     return proposal;
   },
+
+  remove: async ({ portalId, proposalId, userId }) => {
+    await getAccessiblePortal({ portalId, userId });
+    const proposal = await proposalRepository.deleteByIdAndPortal(proposalId, portalId);
+
+    if (!proposal) {
+      const error = new Error('La propuesta no existe');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    return {
+      id: proposal._id.toString(),
+      nombre: proposal.nombre,
+      lifecycleStatus: proposal.lifecycleStatus,
+    };
+  },
 };
 
 export default proposalService;
