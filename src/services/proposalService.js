@@ -1,5 +1,7 @@
 import portalRepository from '../repositories/portalRepository.js';
 import proposalContactRepository from '../repositories/proposalContactRepository.js';
+import proposalCompanyRepository from '../repositories/proposalCompanyRepository.js';
+import proposalOpportunityRepository from '../repositories/proposalOpportunityRepository.js';
 import proposalRepository from '../repositories/proposalRepository.js';
 
 const nullableNumber = (value) => {
@@ -176,12 +178,34 @@ const proposalService = {
       throw error;
     }
 
-    await proposalContactRepository.deleteByProposal(proposalId, portalId);
+    await Promise.all([
+      proposalContactRepository.deleteByProposal(proposalId, portalId),
+      proposalOpportunityRepository.deleteByProposal(proposalId, portalId),
+      proposalCompanyRepository.deleteByProposal(proposalId, portalId),
+    ]);
 
     return {
       id: proposal._id.toString(),
       nombre: proposal.nombre,
       lifecycleStatus: proposal.lifecycleStatus,
+    };
+  },
+
+  removeAll: async ({ portalId, userId }) => {
+    await getAccessiblePortal({ portalId, userId });
+
+    const [proposalResult, contactResult, opportunityResult, companyResult] = await Promise.all([
+      proposalRepository.deleteByPortal(portalId),
+      proposalContactRepository.deleteByPortal(portalId),
+      proposalOpportunityRepository.deleteByPortal(portalId),
+      proposalCompanyRepository.deleteByPortal(portalId),
+    ]);
+
+    return {
+      deletedProposals: proposalResult.deletedCount || 0,
+      deletedContacts: contactResult.deletedCount || 0,
+      deletedOpportunities: opportunityResult.deletedCount || 0,
+      deletedCompanies: companyResult.deletedCount || 0,
     };
   },
 };

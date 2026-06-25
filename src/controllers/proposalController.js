@@ -106,6 +106,23 @@ const proposalController = {
       next(error);
     }
   },
+
+  removeAll: async (req, res, next) => {
+    try {
+      const result = await proposalService.removeAll({
+        portalId: req.params.portalId,
+        userId: req.user.id,
+      });
+
+      return res.json({
+        success: true,
+        message: 'Todas las propuestas se han eliminado correctamente',
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
 };
 
 export default proposalController;

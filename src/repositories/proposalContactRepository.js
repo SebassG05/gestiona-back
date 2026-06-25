@@ -31,6 +31,7 @@ const proposalContactRepository = {
     }).lean(),
   deleteByProposal: (proposalId, portalId) =>
     ProposalContact.deleteMany({ proposal: proposalId, portal: portalId }),
+  deleteByPortal: (portalId) => ProposalContact.deleteMany({ portal: portalId }),
   countByPortal: (portalId) =>
     ProposalContact.aggregate([
       { $match: { portal: new mongoose.Types.ObjectId(portalId) } },

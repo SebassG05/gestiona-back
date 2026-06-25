@@ -13,3 +13,10 @@ export const SMTP_USER = process.env.SMTP_USER;
 export const SMTP_PASS = process.env.SMTP_PASS;
 export const MAIL_FROM = process.env.MAIL_FROM || process.env.SMTP_USER;
 export const FRONTEND_URL = process.env.FRONTEND_URL || process.env.CORS_ORIGIN || 'http://localhost:4016';
+export const MICROSOFT_CLIENT_ID = process.env.MICROSOFT_CLIENT_ID;
+export const MICROSOFT_CLIENT_SECRET = process.env.MICROSOFT_CLIENT_SECRET;
+export const MICROSOFT_TENANT_ID = process.env.MICROSOFT_TENANT_ID || 'common';
+export const MICROSOFT_REDIRECT_URI =
+  process.env.MICROSOFT_REDIRECT_URI ||
+  `http://localhost:${PORT}/api/portals/microsoft/callback`;
+export const EXCEL_TOKEN_SECRET = process.env.EXCEL_TOKEN_SECRET || JWT_SECRET;

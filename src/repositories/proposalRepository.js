@@ -25,6 +25,7 @@ const proposalRepository = {
       .lean(),
   deleteByIdAndPortal: (proposalId, portalId) =>
     Proposal.findOneAndDelete({ _id: proposalId, portal: portalId }).lean(),
+  deleteByPortal: (portalId) => Proposal.deleteMany({ portal: portalId }),
 };
 
 export default proposalRepository;
