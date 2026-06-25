@@ -11,7 +11,7 @@ app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:4016',
   credentials: true,
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 app.get('/health', (req, res) => {

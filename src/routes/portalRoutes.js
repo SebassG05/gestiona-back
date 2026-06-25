@@ -1,12 +1,14 @@
 import { Router } from 'express';
 import portalController from '../controllers/portalController.js';
 import portalExcelController from '../controllers/portalExcelController.js';
+import opportunityWorkbookController from '../controllers/opportunityWorkbookController.js';
 import proposalContactController from '../controllers/proposalContactController.js';
 import proposalController from '../controllers/proposalController.js';
 import proposalRelationController from '../controllers/proposalRelationController.js';
 import authenticate from '../middlewares/authenticate.js';
 import validateRequest from '../middlewares/validateRequest.js';
 import { respondInvitationValidation } from '../validations/invitationValidation.js';
+import { importOpportunityWorkbookValidation } from '../validations/opportunityWorkbookValidation.js';
 import { createPortalValidation } from '../validations/portalValidation.js';
 import {
   selectWorkbookValidation,
@@ -29,6 +31,28 @@ router.get('/microsoft/callback', portalExcelController.callback);
 router.get('/mine', authenticate, portalController.listMine);
 router.get('/invitations/:code', authenticate, portalController.getInvitationByCode);
 router.get('/:portalId/members', authenticate, portalController.listMembers);
+router.get(
+  '/:portalId/opportunity-workbooks',
+  authenticate,
+  opportunityWorkbookController.list
+);
+router.get(
+  '/:portalId/opportunity-workbooks/:workbookId',
+  authenticate,
+  opportunityWorkbookController.getById
+);
+router.post(
+  '/:portalId/opportunity-workbooks/import',
+  authenticate,
+  importOpportunityWorkbookValidation,
+  validateRequest,
+  opportunityWorkbookController.import
+);
+router.delete(
+  '/:portalId/opportunity-workbooks/:workbookId',
+  authenticate,
+  opportunityWorkbookController.remove
+);
 router.get('/:portalId/excel-link/status', authenticate, portalExcelController.status);
 router.get('/:portalId/excel-link/connect-url', authenticate, portalExcelController.connectUrl);
 router.get('/:portalId/excel-link/files', authenticate, portalExcelController.files);
