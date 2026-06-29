@@ -26,6 +26,19 @@ const opportunityWorkbookController = {
     }
   },
 
+  search: async (req, res, next) => {
+    try {
+      const data = await opportunityWorkbookService.search({
+        portalId: req.params.portalId,
+        userId: req.user.id,
+        query: req.query.q,
+      });
+      return res.json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   import: async (req, res, next) => {
     try {
       const data = await opportunityWorkbookService.import({

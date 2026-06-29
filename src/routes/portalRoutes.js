@@ -37,6 +37,11 @@ router.get(
   opportunityWorkbookController.list
 );
 router.get(
+  '/:portalId/opportunity-workbooks/search',
+  authenticate,
+  opportunityWorkbookController.search
+);
+router.get(
   '/:portalId/opportunity-workbooks/:workbookId',
   authenticate,
   opportunityWorkbookController.getById

@@ -54,6 +54,7 @@ const proposalSchema = new mongoose.Schema(
       ref: 'User',
       default: null,
     },
+    responsableName: optionalString,
     rolEvenor: optionalString,
     coordinadorLead: optionalString,
     presupuestoTotal: optionalNumber,

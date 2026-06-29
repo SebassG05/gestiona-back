@@ -23,10 +23,27 @@ const normalizeCell = (value) => {
   return String(value).trim();
 };
 
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 const opportunityWorkbookService = {
   list: async ({ portalId, userId }) => {
     await assertPortalAccess({ portalId, userId });
     return opportunityWorkbookRepository.listByPortal(portalId);
+  },
+
+  search: async ({ portalId, userId, query }) => {
+    await assertPortalAccess({ portalId, userId });
+
+    const normalizedQuery = String(query || '').trim();
+    if (normalizedQuery.length < 2) {
+      return [];
+    }
+
+    return opportunityWorkbookRepository.searchRows({
+      portalId,
+      term: escapeRegex(normalizedQuery),
+      limit: 80,
+    });
   },
 
   getById: async ({ portalId, workbookId, userId }) => {

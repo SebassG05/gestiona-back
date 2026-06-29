@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import OpportunityWorkbook from '../models/OpportunityWorkbook.js';
 import OpportunityWorkbookRow from '../models/OpportunityWorkbookRow.js';
 
@@ -16,6 +17,60 @@ const opportunityWorkbookRepository = {
       .sort({ rowNumber: 1 })
       .select('-__v')
       .lean(),
+  searchRows: ({ portalId, term, limit = 50 }) =>
+    OpportunityWorkbookRow.aggregate([
+      {
+        $match: {
+          portal: new mongoose.Types.ObjectId(portalId),
+        },
+      },
+      {
+        $addFields: {
+          matchesSearch: {
+            $anyElementTrue: {
+              $map: {
+                input: '$values',
+                as: 'value',
+                in: {
+                  $regexMatch: {
+                    input: { $toString: { $ifNull: ['$$value', ''] } },
+                    regex: term,
+                    options: 'i',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      { $match: { matchesSearch: true } },
+      { $sort: { rowNumber: 1 } },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: 'opportunityworkbooks',
+          localField: 'workbook',
+          foreignField: '_id',
+          as: 'workbook',
+        },
+      },
+      { $unwind: '$workbook' },
+      {
+        $project: {
+          _id: 1,
+          rowNumber: 1,
+          values: 1,
+          workbook: {
+            _id: '$workbook._id',
+            name: '$workbook.name',
+            sourceFileName: '$workbook.sourceFileName',
+            sheetName: '$workbook.sheetName',
+            headerRow: '$workbook.headerRow',
+            headers: '$workbook.headers',
+          },
+        },
+      },
+    ]),
   deleteWorkbook: (workbookId, portalId) =>
     OpportunityWorkbook.findOneAndDelete({ _id: workbookId, portal: portalId }).lean(),
   deleteRows: (workbookId, portalId) =>

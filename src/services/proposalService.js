@@ -16,7 +16,8 @@ const nullableDate = (value) => {
   return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
 };
 
-const optionalResponsable = (value) => (value ? value : null);
+const optionalResponsable = (value) =>
+  value && /^[a-f\d]{24}$/i.test(String(value)) ? value : null;
 
 const normalizePriority = (value) => {
   const normalizedValue = String(value || '').trim().toUpperCase();
@@ -48,6 +49,7 @@ const buildProposalData = (data) => {
     estado: data.estado,
     prioridad: normalizePriority(data.prioridad),
     responsable: optionalResponsable(data.responsable),
+    responsableName: data.responsableName?.trim() || '',
     rolEvenor: data.rolEvenor,
     coordinadorLead: data.coordinadorLead,
     presupuestoTotal: nullableNumber(data.presupuestoTotal),
