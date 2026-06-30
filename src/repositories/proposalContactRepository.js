@@ -37,6 +37,18 @@ const proposalContactRepository = {
       { $match: { portal: new mongoose.Types.ObjectId(portalId) } },
       { $group: { _id: '$proposal', count: { $sum: 1 } } },
     ]),
+  countByProposalIds: (portalId, proposalIds) =>
+    ProposalContact.aggregate([
+      {
+        $match: {
+          portal: new mongoose.Types.ObjectId(portalId),
+          proposal: {
+            $in: proposalIds.map((proposalId) => new mongoose.Types.ObjectId(proposalId)),
+          },
+        },
+      },
+      { $group: { _id: '$proposal', count: { $sum: 1 } } },
+    ]),
 };
 
 export default proposalContactRepository;

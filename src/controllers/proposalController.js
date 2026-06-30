@@ -6,6 +6,8 @@ const proposalController = {
       const proposals = await proposalService.listByPortal({
         portalId: req.params.portalId,
         userId: req.user.id,
+        page: req.query.page,
+        limit: req.query.limit,
       });
 
       return res.json({

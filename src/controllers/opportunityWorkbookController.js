@@ -19,6 +19,8 @@ const opportunityWorkbookController = {
         portalId: req.params.portalId,
         workbookId: req.params.workbookId,
         userId: req.user.id,
+        page: req.query.page,
+        limit: req.query.limit,
       });
       return res.json({ success: true, data });
     } catch (error) {

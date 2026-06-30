@@ -17,6 +17,15 @@ const opportunityWorkbookRepository = {
       .sort({ rowNumber: 1 })
       .select('-__v')
       .lean(),
+  listRowsPaginated: ({ workbookId, portalId, skip, limit }) =>
+    OpportunityWorkbookRow.find({ workbook: workbookId, portal: portalId })
+      .sort({ rowNumber: 1 })
+      .skip(skip)
+      .limit(limit)
+      .select('-__v')
+      .lean(),
+  countRows: (workbookId, portalId) =>
+    OpportunityWorkbookRow.countDocuments({ workbook: workbookId, portal: portalId }),
   searchRows: ({ portalId, term, limit = 50 }) =>
     OpportunityWorkbookRow.aggregate([
       {

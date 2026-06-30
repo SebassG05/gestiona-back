@@ -19,6 +19,22 @@ const nullableDate = (value) => {
 const optionalResponsable = (value) =>
   value && /^[a-f\d]{24}$/i.test(String(value)) ? value : null;
 
+const buildPagination = ({ page, limit, total }) => {
+  const safeLimit = Math.min(Math.max(Number(limit) || 25, 1), 100);
+  const safePage = Math.max(Number(page) || 1, 1);
+  const totalPages = Math.max(Math.ceil(total / safeLimit), 1);
+  const currentPage = Math.min(safePage, totalPages);
+
+  return {
+    page: currentPage,
+    limit: safeLimit,
+    total,
+    totalPages,
+    hasNextPage: currentPage < totalPages,
+    hasPreviousPage: currentPage > 1,
+  };
+};
+
 const normalizePriority = (value) => {
   const normalizedValue = String(value || '').trim().toUpperCase();
   const priorityMap = {
@@ -86,20 +102,33 @@ const getAccessiblePortal = async ({ portalId, userId }) => {
 };
 
 const proposalService = {
-  listByPortal: async ({ portalId, userId }) => {
+  listByPortal: async ({ portalId, userId, page, limit }) => {
     await getAccessiblePortal({ portalId, userId });
-    const [proposals, contactCounts] = await Promise.all([
-      proposalRepository.findByPortal(portalId),
-      proposalContactRepository.countByPortal(portalId),
-    ]);
+    const total = await proposalRepository.countByPortal(portalId);
+    const pagination = buildPagination({ page, limit, total });
+    const skip = (pagination.page - 1) * pagination.limit;
+    const proposals = await proposalRepository.findByPortalPaginated({
+      portalId,
+      skip,
+      limit: pagination.limit,
+    });
+    const contactCounts = proposals.length
+      ? await proposalContactRepository.countByProposalIds(
+          portalId,
+          proposals.map((proposal) => proposal._id)
+        )
+      : [];
     const countByProposal = new Map(
       contactCounts.map((item) => [item._id.toString(), item.count])
     );
 
-    return proposals.map((proposal) => ({
-      ...proposal,
-      contactCount: countByProposal.get(proposal._id.toString()) || 0,
-    }));
+    return {
+      items: proposals.map((proposal) => ({
+        ...proposal,
+        contactCount: countByProposal.get(proposal._id.toString()) || 0,
+      })),
+      pagination,
+    };
   },
 
   getById: async ({ portalId, proposalId, userId }) => {

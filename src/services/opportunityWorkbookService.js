@@ -25,6 +25,22 @@ const normalizeCell = (value) => {
 
 const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+const buildPagination = ({ page, limit, total }) => {
+  const safeLimit = Math.min(Math.max(Number(limit) || 80, 1), 200);
+  const safePage = Math.max(Number(page) || 1, 1);
+  const totalPages = Math.max(Math.ceil(total / safeLimit), 1);
+  const currentPage = Math.min(safePage, totalPages);
+
+  return {
+    page: currentPage,
+    limit: safeLimit,
+    total,
+    totalPages,
+    hasNextPage: currentPage < totalPages,
+    hasPreviousPage: currentPage > 1,
+  };
+};
+
 const opportunityWorkbookService = {
   list: async ({ portalId, userId }) => {
     await assertPortalAccess({ portalId, userId });
@@ -46,7 +62,7 @@ const opportunityWorkbookService = {
     });
   },
 
-  getById: async ({ portalId, workbookId, userId }) => {
+  getById: async ({ portalId, workbookId, userId, page, limit }) => {
     await assertPortalAccess({ portalId, userId });
     const workbook = await opportunityWorkbookRepository.findByIdAndPortal(
       workbookId,
@@ -59,8 +75,16 @@ const opportunityWorkbookService = {
       throw error;
     }
 
-    const rows = await opportunityWorkbookRepository.listRows(workbookId, portalId);
-    return { workbook, rows };
+    const total = workbook.rowCount ?? (await opportunityWorkbookRepository.countRows(workbookId, portalId));
+    const pagination = buildPagination({ page, limit, total });
+    const rows = await opportunityWorkbookRepository.listRowsPaginated({
+      workbookId,
+      portalId,
+      skip: (pagination.page - 1) * pagination.limit,
+      limit: pagination.limit,
+    });
+
+    return { workbook, rows, pagination };
   },
 
   import: async ({ portalId, userId, data }) => {

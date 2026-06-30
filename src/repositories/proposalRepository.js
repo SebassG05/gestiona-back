@@ -14,6 +14,15 @@ const proposalRepository = {
       .populate('createdBy', 'username email')
       .sort({ createdAt: -1 })
       .lean(),
+  findByPortalPaginated: ({ portalId, skip, limit }) =>
+    Proposal.find({ portal: portalId })
+      .populate('responsable', 'username email')
+      .populate('createdBy', 'username email')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+  countByPortal: (portalId) => Proposal.countDocuments({ portal: portalId }),
   updateByIdAndPortal: (proposalId, portalId, proposalData) =>
     Proposal.findOneAndUpdate(
       { _id: proposalId, portal: portalId },
