@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import mongoose from 'mongoose';
 import mailService from './mailService.js';
 import portalRepository from '../repositories/portalRepository.js';
 
@@ -206,6 +207,23 @@ const portalService = {
   getInvitationByCode: async ({ code, email }) => {
     const portal = await portalRepository.findByInviteCode(code).populate('owner', 'username email');
 
+    if (!portal && mongoose.Types.ObjectId.isValid(code)) {
+      const portalById = await portalRepository.findById(code).populate('owner', 'username email');
+
+      if (portalById) {
+        return {
+          portalId: portalById._id,
+          portalName: portalById.name,
+          code: portalById._id,
+          email,
+          status: 'portal-code',
+          owner: portalById.owner,
+          tags: portalById.tags,
+          accessMode: 'portal-code',
+        };
+      }
+    }
+
     if (!portal) {
       const error = new Error('La invitacion no existe');
       error.statusCode = 404;
@@ -233,6 +251,27 @@ const portalService = {
 
   respondToInvitation: async ({ code, email, userId, action }) => {
     const portal = await portalRepository.findByInviteCode(code);
+
+    if (!portal && mongoose.Types.ObjectId.isValid(code)) {
+      const portalById = await portalRepository.findById(code);
+
+      if (!portalById) {
+        const error = new Error('El portal no existe');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      if (action === 'accept' && !portalById.members.some((member) => member.equals(userId))) {
+        portalById.members.push(userId);
+        await portalById.save();
+      }
+
+      return {
+        portalId: portalById._id,
+        invitationStatus: action === 'accept' ? 'accepted' : 'rejected',
+        accessMode: 'portal-code',
+      };
+    }
 
     if (!portal) {
       const error = new Error('La invitacion no existe');
