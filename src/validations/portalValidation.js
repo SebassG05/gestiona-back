@@ -25,3 +25,13 @@ export const createPortalValidation = [
     .isEmail().withMessage('Cada invitación debe ser un email válido')
     .normalizeEmail(),
 ];
+
+export const invitePortalMembersValidation = [
+  body('invites')
+    .isArray({ min: 1, max: 25 }).withMessage('Debes enviar entre 1 y 25 emails'),
+
+  body('invites.*')
+    .trim()
+    .isEmail().withMessage('Cada invitacion debe ser un email valido')
+    .normalizeEmail(),
+];

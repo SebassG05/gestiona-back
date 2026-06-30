@@ -9,7 +9,7 @@ import authenticate from '../middlewares/authenticate.js';
 import validateRequest from '../middlewares/validateRequest.js';
 import { respondInvitationValidation } from '../validations/invitationValidation.js';
 import { importOpportunityWorkbookValidation } from '../validations/opportunityWorkbookValidation.js';
-import { createPortalValidation } from '../validations/portalValidation.js';
+import { createPortalValidation, invitePortalMembersValidation } from '../validations/portalValidation.js';
 import {
   selectWorkbookValidation,
   worksheetsValidation,
@@ -31,6 +31,13 @@ router.get('/microsoft/callback', portalExcelController.callback);
 router.get('/mine', authenticate, portalController.listMine);
 router.get('/invitations/:code', authenticate, portalController.getInvitationByCode);
 router.get('/:portalId/members', authenticate, portalController.listMembers);
+router.post(
+  '/:portalId/invitations',
+  authenticate,
+  invitePortalMembersValidation,
+  validateRequest,
+  portalController.inviteMembers
+);
 router.get(
   '/:portalId/opportunity-workbooks',
   authenticate,

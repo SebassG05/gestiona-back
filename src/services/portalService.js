@@ -120,6 +120,89 @@ const portalService = {
     }));
   },
 
+  inviteMembers: async ({ portalId, userId, invites = [] }) => {
+    const portal = await portalRepository.findById(portalId);
+
+    if (!portal) {
+      const error = new Error('El portal no existe');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const canInvite = portal.members.some((member) => member.equals(userId));
+
+    if (!canInvite) {
+      const error = new Error('No tienes acceso a este portal');
+      error.statusCode = 403;
+      throw error;
+    }
+
+    const normalizedEmails = [
+      ...new Set(invites.map((email) => email.trim().toLowerCase()).filter(Boolean)),
+    ];
+
+    const createdInvites = normalizedEmails.map((email) => {
+      const existingInvite = portal.invites.find((invite) => invite.email === email);
+
+      if (existingInvite?.status === 'accepted') {
+        return existingInvite;
+      }
+
+      if (existingInvite) {
+        existingInvite.status = 'pending';
+        existingInvite.code = existingInvite.code || generateInviteCode();
+        existingInvite.invitedBy = userId;
+        existingInvite.sentAt = new Date();
+        existingInvite.respondedAt = null;
+        return existingInvite;
+      }
+
+      const nextInvite = {
+        email,
+        code: generateInviteCode(),
+        invitedBy: userId,
+        status: 'pending',
+        sentAt: new Date(),
+        respondedAt: null,
+      };
+
+      portal.invites.push(nextInvite);
+      return nextInvite;
+    });
+
+    try {
+      await Promise.all(
+        createdInvites
+          .filter((invite) => invite.status !== 'accepted')
+          .map((invite) =>
+            mailService.sendPortalInvitation({
+              to: invite.email,
+              portalName: portal.name,
+              inviteCode: invite.code,
+            })
+          )
+      );
+    } catch (error) {
+      if (!error.statusCode || error.statusCode < 400) {
+        error.statusCode = 502;
+      }
+      throw error;
+    }
+
+    await portal.save();
+
+    return {
+      portalId: portal._id,
+      portalName: portal.name,
+      invites: createdInvites.map((invite) => ({
+        email: invite.email,
+        code: invite.code,
+        status: invite.status,
+        sentAt: invite.sentAt,
+      })),
+    };
+  },
+
   getInvitationByCode: async ({ code, email }) => {
     const portal = await portalRepository.findByInviteCode(code).populate('owner', 'username email');
 

@@ -56,6 +56,24 @@ const portalController = {
     }
   },
 
+  inviteMembers: async (req, res, next) => {
+    try {
+      const result = await portalService.inviteMembers({
+        portalId: req.params.portalId,
+        userId: req.user.id,
+        invites: req.body.invites,
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: 'Invitaciones enviadas correctamente',
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   getInvitationByCode: async (req, res, next) => {
     try {
       const invitation = await portalService.getInvitationByCode({
