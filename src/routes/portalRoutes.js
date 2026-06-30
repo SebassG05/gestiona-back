@@ -38,6 +38,7 @@ router.post(
   validateRequest,
   portalController.inviteMembers
 );
+router.delete('/:portalId/members/:memberId', authenticate, portalController.removeMember);
 router.get(
   '/:portalId/opportunity-workbooks',
   authenticate,

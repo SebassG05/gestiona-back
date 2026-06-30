@@ -74,6 +74,24 @@ const portalController = {
     }
   },
 
+  removeMember: async (req, res, next) => {
+    try {
+      const result = await portalService.removeMember({
+        portalId: req.params.portalId,
+        memberId: req.params.memberId,
+        userId: req.user.id,
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Miembro expulsado correctamente',
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   getInvitationByCode: async (req, res, next) => {
     try {
       const invitation = await portalService.getInvitationByCode({

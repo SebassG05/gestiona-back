@@ -204,6 +204,56 @@ const portalService = {
     };
   },
 
+  removeMember: async ({ portalId, memberId, userId }) => {
+    const portal = await portalRepository.findById(portalId).populate('members', 'email');
+
+    if (!portal) {
+      const error = new Error('El portal no existe');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (!portal.owner.equals(userId)) {
+      const error = new Error('Solo el propietario puede expulsar miembros');
+      error.statusCode = 403;
+      throw error;
+    }
+
+    if (portal.owner.equals(memberId)) {
+      const error = new Error('No puedes expulsar al propietario del portal');
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const member = portal.members.find((item) => item._id.equals(memberId));
+
+    if (!member) {
+      const error = new Error('El miembro no pertenece a este portal');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    portal.members = portal.members
+      .filter((item) => !item._id.equals(memberId))
+      .map((item) => item._id);
+
+    portal.invites = portal.invites.map((invite) => {
+      if (invite.email === member.email) {
+        invite.status = 'rejected';
+        invite.respondedAt = new Date();
+      }
+
+      return invite;
+    });
+
+    await portal.save();
+
+    return {
+      portalId: portal._id,
+      memberId,
+    };
+  },
+
   getInvitationByCode: async ({ code, email }) => {
     const portal = await portalRepository.findByInviteCode(code).populate('owner', 'username email');
 
