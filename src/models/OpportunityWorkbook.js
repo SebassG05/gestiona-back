@@ -31,6 +31,12 @@ const opportunityWorkbookSchema = new mongoose.Schema(
       trim: true,
       maxlength: 120,
     },
+    category: {
+      type: String,
+      enum: ['opportunities', 'contacts'],
+      default: 'opportunities',
+      index: true,
+    },
     headerRow: {
       type: Number,
       required: true,
@@ -54,6 +60,7 @@ const opportunityWorkbookSchema = new mongoose.Schema(
 );
 
 opportunityWorkbookSchema.index({ portal: 1, createdAt: -1 });
+opportunityWorkbookSchema.index({ portal: 1, category: 1, createdAt: -1 });
 
 const OpportunityWorkbook = mongoose.model(
   'OpportunityWorkbook',

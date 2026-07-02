@@ -6,6 +6,7 @@ const opportunityWorkbookController = {
       const data = await opportunityWorkbookService.list({
         portalId: req.params.portalId,
         userId: req.user.id,
+        category: req.query.category,
       });
       return res.json({ success: true, data });
     } catch (error) {
@@ -34,6 +35,7 @@ const opportunityWorkbookController = {
         portalId: req.params.portalId,
         userId: req.user.id,
         query: req.query.q,
+        category: req.query.category,
       });
       return res.json({ success: true, data });
     } catch (error) {

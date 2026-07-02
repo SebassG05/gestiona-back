@@ -24,6 +24,8 @@ const normalizeCell = (value) => {
 };
 
 const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const normalizeCategory = (category) =>
+  category === 'contacts' ? 'contacts' : 'opportunities';
 
 const buildPagination = ({ page, limit, total }) => {
   const safeLimit = Math.min(Math.max(Number(limit) || 80, 1), 200);
@@ -42,12 +44,12 @@ const buildPagination = ({ page, limit, total }) => {
 };
 
 const opportunityWorkbookService = {
-  list: async ({ portalId, userId }) => {
+  list: async ({ portalId, userId, category }) => {
     await assertPortalAccess({ portalId, userId });
-    return opportunityWorkbookRepository.listByPortal(portalId);
+    return opportunityWorkbookRepository.listByPortal(portalId, normalizeCategory(category));
   },
 
-  search: async ({ portalId, userId, query }) => {
+  search: async ({ portalId, userId, query, category }) => {
     await assertPortalAccess({ portalId, userId });
 
     const normalizedQuery = String(query || '').trim();
@@ -58,6 +60,7 @@ const opportunityWorkbookService = {
     return opportunityWorkbookRepository.searchRows({
       portalId,
       term: escapeRegex(normalizedQuery),
+      category: normalizeCategory(category),
       limit: 80,
     });
   },
@@ -104,6 +107,7 @@ const opportunityWorkbookService = {
       name: data.name.trim(),
       sourceFileName: data.sourceFileName.trim(),
       sheetName: data.sheetName.trim(),
+      category: normalizeCategory(data.category),
       headerRow: data.headerRow,
       headers,
       rowCount: normalizedRows.length,

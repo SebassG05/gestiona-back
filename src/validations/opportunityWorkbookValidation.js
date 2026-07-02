@@ -1,6 +1,10 @@
 import { body } from 'express-validator';
 
 export const importOpportunityWorkbookValidation = [
+  body('category')
+    .optional()
+    .isIn(['opportunities', 'contacts'])
+    .withMessage('La categoria del Excel no es valida'),
   body('name')
     .trim()
     .isLength({ min: 1, max: 120 })
