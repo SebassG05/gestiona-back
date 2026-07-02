@@ -22,6 +22,7 @@ const opportunityWorkbookController = {
         userId: req.user.id,
         page: req.query.page,
         limit: req.query.limit,
+        filters: req.query.filters,
       });
       return res.json({ success: true, data });
     } catch (error) {

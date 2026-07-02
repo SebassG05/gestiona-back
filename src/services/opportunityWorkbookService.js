@@ -27,6 +27,52 @@ const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$
 const normalizeCategory = (category) =>
   category === 'contacts' ? 'contacts' : 'opportunities';
 
+const parseFilters = (rawFilters) => {
+  if (!rawFilters) return [];
+  if (Array.isArray(rawFilters)) return rawFilters;
+
+  try {
+    const parsed = JSON.parse(rawFilters);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const buildMongoRowFilters = ({ headers, rawFilters }) => {
+  const filters = parseFilters(rawFilters)
+    .map((filter) => ({
+      header: String(filter?.header || '').trim(),
+      value: String(filter?.value || '').trim(),
+    }))
+    .filter((filter) => filter.header && filter.value);
+
+  if (!filters.length) return {};
+
+  const conditions = filters
+    .map((filter) => {
+      const columnIndex = headers.findIndex((header) => header === filter.header);
+      if (columnIndex < 0) return null;
+
+      return {
+        $expr: {
+          $regexMatch: {
+            input: {
+              $toString: {
+                $ifNull: [{ $arrayElemAt: ['$values', columnIndex] }, ''],
+              },
+            },
+            regex: escapeRegex(filter.value),
+            options: 'i',
+          },
+        },
+      };
+    })
+    .filter(Boolean);
+
+  return conditions.length ? { $and: conditions } : {};
+};
+
 const buildPagination = ({ page, limit, total }) => {
   const safeLimit = Math.min(Math.max(Number(limit) || 80, 1), 200);
   const safePage = Math.max(Number(page) || 1, 1);
@@ -65,7 +111,7 @@ const opportunityWorkbookService = {
     });
   },
 
-  getById: async ({ portalId, workbookId, userId, page, limit }) => {
+  getById: async ({ portalId, workbookId, userId, page, limit, filters }) => {
     await assertPortalAccess({ portalId, userId });
     const workbook = await opportunityWorkbookRepository.findByIdAndPortal(
       workbookId,
@@ -78,14 +124,33 @@ const opportunityWorkbookService = {
       throw error;
     }
 
-    const total = workbook.rowCount ?? (await opportunityWorkbookRepository.countRows(workbookId, portalId));
-    const pagination = buildPagination({ page, limit, total });
-    const rows = await opportunityWorkbookRepository.listRowsPaginated({
-      workbookId,
-      portalId,
-      skip: (pagination.page - 1) * pagination.limit,
-      limit: pagination.limit,
+    const mongoFilters = buildMongoRowFilters({
+      headers: workbook.headers || [],
+      rawFilters: filters,
     });
+    const hasFilters = Object.keys(mongoFilters).length > 0;
+    const total = hasFilters
+      ? await opportunityWorkbookRepository.countRowsFiltered({
+          workbookId,
+          portalId,
+          filters: mongoFilters,
+        })
+      : workbook.rowCount ?? (await opportunityWorkbookRepository.countRows(workbookId, portalId));
+    const pagination = buildPagination({ page, limit, total });
+    const rows = hasFilters
+      ? await opportunityWorkbookRepository.listRowsFilteredPaginated({
+          workbookId,
+          portalId,
+          filters: mongoFilters,
+          skip: (pagination.page - 1) * pagination.limit,
+          limit: pagination.limit,
+        })
+      : await opportunityWorkbookRepository.listRowsPaginated({
+          workbookId,
+          portalId,
+          skip: (pagination.page - 1) * pagination.limit,
+          limit: pagination.limit,
+        });
 
     return { workbook, rows, pagination };
   },

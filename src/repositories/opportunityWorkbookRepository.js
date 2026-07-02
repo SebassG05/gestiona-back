@@ -119,8 +119,28 @@ const opportunityWorkbookRepository = {
       .limit(limit)
       .select('-__v')
       .lean(),
+  listRowsFilteredPaginated: ({ workbookId, portalId, filters, skip, limit }) =>
+    OpportunityWorkbookRow.aggregate([
+      {
+        $match: {
+          workbook: new mongoose.Types.ObjectId(workbookId),
+          portal: new mongoose.Types.ObjectId(portalId),
+          ...filters,
+        },
+      },
+      { $sort: { rowNumber: 1 } },
+      { $skip: skip },
+      { $limit: limit },
+      { $project: { __v: 0 } },
+    ]),
   countRows: (workbookId, portalId) =>
     OpportunityWorkbookRow.countDocuments({ workbook: workbookId, portal: portalId }),
+  countRowsFiltered: ({ workbookId, portalId, filters }) =>
+    OpportunityWorkbookRow.countDocuments({
+      workbook: workbookId,
+      portal: portalId,
+      ...filters,
+    }),
   searchRows: ({ portalId, term, category = 'opportunities', limit = 50 }) =>
     OpportunityWorkbookRow.aggregate([
       {
