@@ -73,6 +73,11 @@ const buildMongoRowFilters = ({ headers, rawFilters }) => {
   return conditions.length ? { $and: conditions } : {};
 };
 
+const normalizeRowValues = ({ values, headers }) => {
+  const nextValues = Array.isArray(values) ? values : [];
+  return headers.map((_, index) => normalizeCell(nextValues[index]));
+};
+
 const buildPagination = ({ page, limit, total }) => {
   const safeLimit = Math.min(Math.max(Number(limit) || 80, 1), 200);
   const safePage = Math.max(Number(page) || 1, 1);
@@ -215,6 +220,88 @@ const opportunityWorkbookService = {
     await opportunityWorkbookRepository.deleteWorkbook(workbookId, portalId);
 
     return { id: workbook._id.toString(), name: workbook.name };
+  },
+
+  createRow: async ({ portalId, workbookId, userId, values }) => {
+    await assertPortalAccess({ portalId, userId });
+    const workbook = await opportunityWorkbookRepository.findByIdAndPortal(
+      workbookId,
+      portalId
+    );
+
+    if (!workbook) {
+      const error = new Error('La pagina de contactos no existe');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const lastRow = await opportunityWorkbookRepository.getLastRow(workbookId, portalId);
+    const row = await opportunityWorkbookRepository.createRow({
+      portal: portalId,
+      workbook: workbookId,
+      rowNumber: (lastRow?.rowNumber || workbook.headerRow || 1) + 1,
+      values: normalizeRowValues({ values, headers: workbook.headers || [] }),
+    });
+
+    await opportunityWorkbookRepository.incrementWorkbookRowCount({
+      workbookId,
+      portalId,
+      amount: 1,
+    });
+
+    return row.toObject();
+  },
+
+  updateRow: async ({ portalId, workbookId, rowId, userId, values }) => {
+    await assertPortalAccess({ portalId, userId });
+    const workbook = await opportunityWorkbookRepository.findByIdAndPortal(
+      workbookId,
+      portalId
+    );
+
+    if (!workbook) {
+      const error = new Error('La pagina de contactos no existe');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const row = await opportunityWorkbookRepository.updateRow({
+      rowId,
+      workbookId,
+      portalId,
+      values: normalizeRowValues({ values, headers: workbook.headers || [] }),
+    });
+
+    if (!row) {
+      const error = new Error('El contacto no existe');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    return row;
+  },
+
+  removeRow: async ({ portalId, workbookId, rowId, userId }) => {
+    await assertPortalAccess({ portalId, userId });
+    const row = await opportunityWorkbookRepository.deleteRow({
+      rowId,
+      workbookId,
+      portalId,
+    });
+
+    if (!row) {
+      const error = new Error('El contacto no existe');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    await opportunityWorkbookRepository.incrementWorkbookRowCount({
+      workbookId,
+      portalId,
+      amount: -1,
+    });
+
+    return { id: row._id.toString() };
   },
 };
 

@@ -77,6 +77,61 @@ const opportunityWorkbookController = {
       next(error);
     }
   },
+
+  createRow: async (req, res, next) => {
+    try {
+      const data = await opportunityWorkbookService.createRow({
+        portalId: req.params.portalId,
+        workbookId: req.params.workbookId,
+        userId: req.user.id,
+        values: req.body.values,
+      });
+      return res.status(201).json({
+        success: true,
+        message: 'Contacto creado correctamente',
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  updateRow: async (req, res, next) => {
+    try {
+      const data = await opportunityWorkbookService.updateRow({
+        portalId: req.params.portalId,
+        workbookId: req.params.workbookId,
+        rowId: req.params.rowId,
+        userId: req.user.id,
+        values: req.body.values,
+      });
+      return res.json({
+        success: true,
+        message: 'Contacto actualizado correctamente',
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  removeRow: async (req, res, next) => {
+    try {
+      const data = await opportunityWorkbookService.removeRow({
+        portalId: req.params.portalId,
+        workbookId: req.params.workbookId,
+        rowId: req.params.rowId,
+        userId: req.user.id,
+      });
+      return res.json({
+        success: true,
+        message: 'Contacto eliminado correctamente',
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
 };
 
 export default opportunityWorkbookController;

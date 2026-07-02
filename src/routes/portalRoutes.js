@@ -61,6 +61,21 @@ router.post(
   validateRequest,
   opportunityWorkbookController.import
 );
+router.post(
+  '/:portalId/opportunity-workbooks/:workbookId/rows',
+  authenticate,
+  opportunityWorkbookController.createRow
+);
+router.patch(
+  '/:portalId/opportunity-workbooks/:workbookId/rows/:rowId',
+  authenticate,
+  opportunityWorkbookController.updateRow
+);
+router.delete(
+  '/:portalId/opportunity-workbooks/:workbookId/rows/:rowId',
+  authenticate,
+  opportunityWorkbookController.removeRow
+);
 router.delete(
   '/:portalId/opportunity-workbooks/:workbookId',
   authenticate,

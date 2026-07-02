@@ -141,6 +141,29 @@ const opportunityWorkbookRepository = {
       portal: portalId,
       ...filters,
     }),
+  getLastRow: (workbookId, portalId) =>
+    OpportunityWorkbookRow.findOne({ workbook: workbookId, portal: portalId })
+      .sort({ rowNumber: -1 })
+      .lean(),
+  createRow: (data) => OpportunityWorkbookRow.create(data),
+  updateRow: ({ rowId, workbookId, portalId, values }) =>
+    OpportunityWorkbookRow.findOneAndUpdate(
+      { _id: rowId, workbook: workbookId, portal: portalId },
+      { values },
+      { new: true }
+    ).lean(),
+  deleteRow: ({ rowId, workbookId, portalId }) =>
+    OpportunityWorkbookRow.findOneAndDelete({
+      _id: rowId,
+      workbook: workbookId,
+      portal: portalId,
+    }).lean(),
+  incrementWorkbookRowCount: ({ workbookId, portalId, amount }) =>
+    OpportunityWorkbook.findOneAndUpdate(
+      { _id: workbookId, portal: portalId },
+      { $inc: { rowCount: amount } },
+      { new: true }
+    ).lean(),
   searchRows: ({ portalId, term, category = 'opportunities', limit = 50 }) =>
     OpportunityWorkbookRow.aggregate([
       {
