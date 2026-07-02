@@ -219,6 +219,42 @@ const opportunityWorkbookRepository = {
         },
       },
     ]),
+  findRowsByIds: ({ portalId, rowIds, category = 'opportunities' }) =>
+    OpportunityWorkbookRow.aggregate([
+      {
+        $match: {
+          portal: new mongoose.Types.ObjectId(portalId),
+          _id: { $in: rowIds.map((rowId) => new mongoose.Types.ObjectId(rowId)) },
+        },
+      },
+      {
+        $lookup: {
+          from: 'opportunityworkbooks',
+          localField: 'workbook',
+          foreignField: '_id',
+          as: 'workbook',
+        },
+      },
+      { $unwind: '$workbook' },
+      { $match: categoryAggregateMatch(category) },
+      {
+        $project: {
+          _id: 1,
+          portal: 1,
+          rowNumber: 1,
+          values: 1,
+          workbook: {
+            _id: '$workbook._id',
+            name: '$workbook.name',
+            sourceFileName: '$workbook.sourceFileName',
+            sheetName: '$workbook.sheetName',
+            headerRow: '$workbook.headerRow',
+            headers: '$workbook.headers',
+            category: '$workbook.category',
+          },
+        },
+      },
+    ]),
   deleteWorkbook: (workbookId, portalId) =>
     OpportunityWorkbook.findOneAndDelete({ _id: workbookId, portal: portalId }).lean(),
   deleteRows: (workbookId, portalId) =>

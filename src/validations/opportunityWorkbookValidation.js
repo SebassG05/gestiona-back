@@ -30,3 +30,21 @@ export const importOpportunityWorkbookValidation = [
     .isArray({ min: 1, max: 100 })
     .withMessage('Cada fila debe contener entre 1 y 100 celdas'),
 ];
+
+export const linkOpportunityContactsValidation = [
+  body('contactRowIds')
+    .isArray({ min: 1, max: 200 })
+    .withMessage('Debes seleccionar entre 1 y 200 contactos'),
+  body('contactRowIds.*')
+    .isMongoId()
+    .withMessage('Uno de los contactos seleccionados no es valido'),
+];
+
+export const linkedOpportunityContactsValidation = [
+  body('rowIds')
+    .isArray({ min: 1, max: 200 })
+    .withMessage('Debes indicar entre 1 y 200 filas de oportunidad'),
+  body('rowIds.*')
+    .isMongoId()
+    .withMessage('Una de las filas de oportunidad no es valida'),
+];

@@ -1,4 +1,5 @@
 import opportunityWorkbookRepository from '../repositories/opportunityWorkbookRepository.js';
+import opportunityContactLinkRepository from '../repositories/opportunityContactLinkRepository.js';
 import portalRepository from '../repositories/portalRepository.js';
 
 const assertPortalAccess = async ({ portalId, userId }) => {
@@ -77,6 +78,16 @@ const normalizeRowValues = ({ values, headers }) => {
   const nextValues = Array.isArray(values) ? values : [];
   return headers.map((_, index) => normalizeCell(nextValues[index]));
 };
+
+const buildRowSnapshot = (row) => ({
+  workbookId: row.workbook?._id,
+  workbookName: row.workbook?.name,
+  sourceFileName: row.workbook?.sourceFileName,
+  sheetName: row.workbook?.sheetName,
+  rowNumber: row.rowNumber,
+  headers: row.workbook?.headers || [],
+  values: row.values || [],
+});
 
 const buildPagination = ({ page, limit, total }) => {
   const safeLimit = Math.min(Math.max(Number(limit) || 80, 1), 200);
@@ -157,6 +168,25 @@ const opportunityWorkbookService = {
           limit: pagination.limit,
         });
 
+    if ((workbook.category || 'opportunities') !== 'contacts' && rows.length) {
+      const counts = await opportunityContactLinkRepository.countByOpportunityRows(
+        portalId,
+        rows.map((row) => row._id)
+      );
+      const countsByRow = new Map(
+        counts.map((item) => [item._id.toString(), item.count])
+      );
+
+      return {
+        workbook,
+        rows: rows.map((row) => ({
+          ...row,
+          contactLinkCount: countsByRow.get(row._id.toString()) || 0,
+        })),
+        pagination,
+      };
+    }
+
     return { workbook, rows, pagination };
   },
 
@@ -218,6 +248,7 @@ const opportunityWorkbookService = {
 
     await opportunityWorkbookRepository.deleteRows(workbookId, portalId);
     await opportunityWorkbookRepository.deleteWorkbook(workbookId, portalId);
+    await opportunityContactLinkRepository.deleteByWorkbook(workbookId, portalId);
 
     return { id: workbook._id.toString(), name: workbook.name };
   },
@@ -300,8 +331,167 @@ const opportunityWorkbookService = {
       portalId,
       amount: -1,
     });
+    await opportunityContactLinkRepository.deleteByRow(rowId, portalId);
 
     return { id: row._id.toString() };
+  },
+
+  linkContactsToOpportunity: async ({
+    portalId,
+    workbookId,
+    rowId,
+    userId,
+    contactRowIds,
+  }) => {
+    await assertPortalAccess({ portalId, userId });
+
+    const uniqueContactRowIds = [
+      ...new Set((Array.isArray(contactRowIds) ? contactRowIds : []).map(String)),
+    ];
+
+    if (!uniqueContactRowIds.length) {
+      const error = new Error('Selecciona al menos un contacto');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const [opportunityRow] = await opportunityWorkbookRepository.findRowsByIds({
+      portalId,
+      rowIds: [rowId],
+      category: 'opportunities',
+    });
+
+    if (!opportunityRow || opportunityRow.workbook?._id.toString() !== workbookId) {
+      const error = new Error('La oportunidad no existe');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const contactRows = await opportunityWorkbookRepository.findRowsByIds({
+      portalId,
+      rowIds: uniqueContactRowIds,
+      category: 'contacts',
+    });
+
+    if (!contactRows.length) {
+      const error = new Error('No se encontraron contactos validos');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const existingLinks = await opportunityContactLinkRepository.findExisting({
+      portalId,
+      opportunityRowId: rowId,
+      contactRowIds: contactRows.map((row) => row._id),
+    });
+    const existingContactIds = new Set(
+      existingLinks.map((link) => link.contactRow.toString())
+    );
+
+    const linksToCreate = contactRows
+      .filter((row) => !existingContactIds.has(row._id.toString()))
+      .map((contactRow) => ({
+        portal: portalId,
+        opportunityWorkbook: opportunityRow.workbook._id,
+        opportunityRow: opportunityRow._id,
+        contactWorkbook: contactRow.workbook._id,
+        contactRow: contactRow._id,
+        createdBy: userId,
+        opportunitySnapshot: buildRowSnapshot(opportunityRow),
+        contactSnapshot: buildRowSnapshot(contactRow),
+      }));
+
+    if (linksToCreate.length) {
+      try {
+        await opportunityContactLinkRepository.createMany(linksToCreate);
+      } catch (error) {
+        if (error?.code !== 11000) throw error;
+      }
+    }
+
+    return {
+      linked: linksToCreate.length,
+      skipped: contactRows.length - linksToCreate.length,
+      total: contactRows.length,
+      opportunityRowId: opportunityRow._id.toString(),
+    };
+  },
+
+  listLinkedContactsForOpportunityRows: async ({
+    portalId,
+    workbookId,
+    userId,
+    rowIds,
+  }) => {
+    await assertPortalAccess({ portalId, userId });
+
+    const uniqueRowIds = [...new Set((Array.isArray(rowIds) ? rowIds : []).map(String))];
+
+    if (!uniqueRowIds.length) {
+      const error = new Error('Selecciona al menos una oportunidad');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const opportunityRows = await opportunityWorkbookRepository.findRowsByIds({
+      portalId,
+      rowIds: uniqueRowIds,
+      category: 'opportunities',
+    });
+    const validOpportunityRows = opportunityRows.filter(
+      (row) => row.workbook?._id.toString() === workbookId
+    );
+
+    if (!validOpportunityRows.length) {
+      const error = new Error('La oportunidad no existe');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const links = await opportunityContactLinkRepository.findByOpportunityRows({
+      portalId,
+      opportunityRowIds: validOpportunityRows.map((row) => row._id),
+    });
+
+    return links.map((link) => {
+      const snapshot = link.contactSnapshot || {};
+      const workbook = link.contactWorkbook || {};
+      const row = link.contactRow || {};
+
+      return {
+        id: link._id.toString(),
+        opportunityRowId: link.opportunityRow?.toString(),
+        createdAt: link.createdAt,
+        contact: {
+          rowId: row._id?.toString() || link.contactRow?.toString() || null,
+          workbookId: workbook._id?.toString() || link.contactWorkbook?.toString() || null,
+          workbookName: workbook.name || snapshot.workbookName || 'Contactos',
+          sourceFileName: workbook.sourceFileName || snapshot.sourceFileName || '',
+          sheetName: workbook.sheetName || snapshot.sheetName || '',
+          rowNumber: row.rowNumber || snapshot.rowNumber || null,
+          headers: workbook.headers || snapshot.headers || [],
+          values: row.values || snapshot.values || [],
+        },
+      };
+    });
+  },
+
+  unlinkContactFromOpportunity: async ({ portalId, workbookId, linkId, userId }) => {
+    await assertPortalAccess({ portalId, userId });
+
+    const deletedLink = await opportunityContactLinkRepository.deleteById({
+      portalId,
+      workbookId,
+      linkId,
+    });
+
+    if (!deletedLink) {
+      const error = new Error('El contacto vinculado no existe');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    return { id: deletedLink._id.toString() };
   },
 };
 

@@ -132,6 +132,60 @@ const opportunityWorkbookController = {
       next(error);
     }
   },
+
+  linkContactsToOpportunity: async (req, res, next) => {
+    try {
+      const data = await opportunityWorkbookService.linkContactsToOpportunity({
+        portalId: req.params.portalId,
+        workbookId: req.params.workbookId,
+        rowId: req.params.rowId,
+        userId: req.user.id,
+        contactRowIds: req.body.contactRowIds,
+      });
+      return res.json({
+        success: true,
+        message: 'Contactos vinculados correctamente',
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  listLinkedContacts: async (req, res, next) => {
+    try {
+      const data = await opportunityWorkbookService.listLinkedContactsForOpportunityRows({
+        portalId: req.params.portalId,
+        workbookId: req.params.workbookId,
+        userId: req.user.id,
+        rowIds: req.body.rowIds,
+      });
+      return res.json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  unlinkContactFromOpportunity: async (req, res, next) => {
+    try {
+      const data = await opportunityWorkbookService.unlinkContactFromOpportunity({
+        portalId: req.params.portalId,
+        workbookId: req.params.workbookId,
+        linkId: req.params.linkId,
+        userId: req.user.id,
+      });
+      return res.json({
+        success: true,
+        message: 'Contacto desvinculado correctamente',
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
 };
 
 export default opportunityWorkbookController;

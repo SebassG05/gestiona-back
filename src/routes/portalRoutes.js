@@ -8,7 +8,11 @@ import proposalRelationController from '../controllers/proposalRelationControlle
 import authenticate from '../middlewares/authenticate.js';
 import validateRequest from '../middlewares/validateRequest.js';
 import { respondInvitationValidation } from '../validations/invitationValidation.js';
-import { importOpportunityWorkbookValidation } from '../validations/opportunityWorkbookValidation.js';
+import {
+  importOpportunityWorkbookValidation,
+  linkedOpportunityContactsValidation,
+  linkOpportunityContactsValidation,
+} from '../validations/opportunityWorkbookValidation.js';
 import { createPortalValidation, invitePortalMembersValidation } from '../validations/portalValidation.js';
 import {
   selectWorkbookValidation,
@@ -70,6 +74,25 @@ router.patch(
   '/:portalId/opportunity-workbooks/:workbookId/rows/:rowId',
   authenticate,
   opportunityWorkbookController.updateRow
+);
+router.post(
+  '/:portalId/opportunity-workbooks/:workbookId/rows/:rowId/contacts/link',
+  authenticate,
+  linkOpportunityContactsValidation,
+  validateRequest,
+  opportunityWorkbookController.linkContactsToOpportunity
+);
+router.post(
+  '/:portalId/opportunity-workbooks/:workbookId/contacts/linked',
+  authenticate,
+  linkedOpportunityContactsValidation,
+  validateRequest,
+  opportunityWorkbookController.listLinkedContacts
+);
+router.delete(
+  '/:portalId/opportunity-workbooks/:workbookId/contacts/linked/:linkId',
+  authenticate,
+  opportunityWorkbookController.unlinkContactFromOpportunity
 );
 router.delete(
   '/:portalId/opportunity-workbooks/:workbookId/rows/:rowId',
