@@ -14,6 +14,9 @@ const userRepository = {
 
   findById: (id) => User.findById(id),
 
+  updateById: (id, data) =>
+    User.findByIdAndUpdate(id, data, { new: true, runValidators: true }),
+
   deleteById: (id) => User.findByIdAndDelete(id),
 };
 
