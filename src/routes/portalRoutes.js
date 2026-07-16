@@ -5,6 +5,7 @@ import opportunityWorkbookController from '../controllers/opportunityWorkbookCon
 import proposalContactController from '../controllers/proposalContactController.js';
 import proposalController from '../controllers/proposalController.js';
 import proposalRelationController from '../controllers/proposalRelationController.js';
+import teamActivityController from '../controllers/teamActivityController.js';
 import authenticate from '../middlewares/authenticate.js';
 import validateRequest from '../middlewares/validateRequest.js';
 import { respondInvitationValidation } from '../validations/invitationValidation.js';
@@ -35,6 +36,10 @@ router.get('/microsoft/callback', portalExcelController.callback);
 router.get('/mine', authenticate, portalController.listMine);
 router.get('/invitations/:code', authenticate, portalController.getInvitationByCode);
 router.get('/:portalId/members', authenticate, portalController.listMembers);
+router.get('/:portalId/team-activities', authenticate, teamActivityController.list);
+router.post('/:portalId/team-activities', authenticate, teamActivityController.create);
+router.patch('/:portalId/team-activities/:activityId', authenticate, teamActivityController.update);
+router.delete('/:portalId/team-activities/:activityId', authenticate, teamActivityController.remove);
 router.post(
   '/:portalId/invitations',
   authenticate,
