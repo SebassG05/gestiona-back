@@ -46,6 +46,12 @@ const teamActivitySchema = new mongoose.Schema(
       enum: ['low', 'medium', 'high', 'urgent'],
       default: 'medium',
     },
+    color: {
+      type: String,
+      trim: true,
+      default: '#ff5a1f',
+      match: [/^#[0-9A-Fa-f]{6}$/, 'El color no es valido'],
+    },
   },
   {
     timestamps: true,

@@ -3,6 +3,17 @@ import portalRepository from '../repositories/portalRepository.js';
 import teamActivityRepository from '../repositories/teamActivityRepository.js';
 
 const toObjectId = (value) => value?.toString?.() || String(value);
+const DEFAULT_ACTIVITY_COLOR = '#ff5a1f';
+const USER_ACTIVITY_COLORS = [
+  '#ff5a1f',
+  '#ff3048',
+  '#f59e0b',
+  '#10b981',
+  '#06b6d4',
+  '#8b5cf6',
+  '#ec4899',
+  '#3b1208',
+];
 
 const normalizeDate = (value) => {
   if (!value) return new Date();
@@ -45,12 +56,25 @@ const mapUser = (user) => ({
   email: user?.email || '',
 });
 
+const getUserActivityColor = (userId) => {
+  const source = toObjectId(userId || '');
+  if (!source) return DEFAULT_ACTIVITY_COLOR;
+
+  let hash = 0;
+  for (let index = 0; index < source.length; index += 1) {
+    hash = (hash * 31 + source.charCodeAt(index)) % USER_ACTIVITY_COLORS.length;
+  }
+
+  return USER_ACTIVITY_COLORS[hash] || DEFAULT_ACTIVITY_COLOR;
+};
+
 const mapActivity = (activity) => ({
   id: activity._id,
   title: activity.title,
   description: activity.description,
   status: activity.status,
   priority: activity.priority,
+  color: getUserActivityColor(activity.assignedTo?._id || activity.assignedTo?.id || activity.assignedTo),
   workDate: activity.workDate,
   author: mapUser(activity.author),
   assignedTo: mapUser(activity.assignedTo),
@@ -125,7 +149,7 @@ const teamActivityService = {
 
   create: async ({ portalId, userId, activityData }) => {
     const portal = await getPortalForMember({ portalId, userId });
-    const assignedTo = activityData.assignedTo || userId;
+    const assignedTo = userId;
 
     assertPortalMember(portal, assignedTo);
     const workDate = normalizeDate(activityData.workDate);
@@ -140,6 +164,7 @@ const teamActivityService = {
       workDate,
       status: activityData.status || 'in_progress',
       priority: activityData.priority || 'medium',
+      color: getUserActivityColor(userId),
     });
 
     const populated = await teamActivityRepository.findById(activity._id)
@@ -161,12 +186,8 @@ const teamActivityService = {
 
     assertCanManageActivity({ portal, activity, userId });
 
-    if (activityData.assignedTo) {
-      assertPortalMember(portal, activityData.assignedTo);
-    }
-
     const nextData = {};
-    const allowedFields = ['title', 'description', 'assignedTo', 'status', 'priority'];
+    const allowedFields = ['title', 'description', 'status', 'priority'];
 
     allowedFields.forEach((field) => {
       if (activityData[field] !== undefined) {
