@@ -6,6 +6,7 @@ import proposalContactController from '../controllers/proposalContactController.
 import proposalController from '../controllers/proposalController.js';
 import proposalRelationController from '../controllers/proposalRelationController.js';
 import teamActivityController from '../controllers/teamActivityController.js';
+import teamVacationController from '../controllers/teamVacationController.js';
 import authenticate from '../middlewares/authenticate.js';
 import validateRequest from '../middlewares/validateRequest.js';
 import { respondInvitationValidation } from '../validations/invitationValidation.js';
@@ -40,6 +41,9 @@ router.get('/:portalId/team-activities', authenticate, teamActivityController.li
 router.post('/:portalId/team-activities', authenticate, teamActivityController.create);
 router.patch('/:portalId/team-activities/:activityId', authenticate, teamActivityController.update);
 router.delete('/:portalId/team-activities/:activityId', authenticate, teamActivityController.remove);
+router.get('/:portalId/team-vacations', authenticate, teamVacationController.list);
+router.post('/:portalId/team-vacations', authenticate, teamVacationController.create);
+router.delete('/:portalId/team-vacations/:vacationId', authenticate, teamVacationController.remove);
 router.post(
   '/:portalId/invitations',
   authenticate,
