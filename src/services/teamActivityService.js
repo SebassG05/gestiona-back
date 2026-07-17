@@ -160,7 +160,7 @@ const teamActivityService = {
 
   create: async ({ portalId, userId, activityData }) => {
     const portal = await getPortalForMember({ portalId, userId });
-    const assignedTo = userId;
+    const assignedTo = activityData.assignedTo || userId;
 
     assertPortalMember(portal, assignedTo);
     const workDate = normalizeDate(activityData.workDate);
@@ -175,7 +175,7 @@ const teamActivityService = {
       workDate,
       status: activityData.status || 'in_progress',
       priority: activityData.priority || 'medium',
-      color: getUserActivityColor(userId),
+      color: getUserActivityColor(assignedTo),
     });
 
     const populated = await teamActivityRepository.findById(activity._id);
@@ -207,6 +207,12 @@ const teamActivityService = {
     if (activityData.workDate) {
       nextData.workDate = normalizeDate(activityData.workDate);
       assertNotPastDate(nextData.workDate);
+    }
+
+    if (activityData.assignedTo !== undefined) {
+      assertPortalMember(portal, activityData.assignedTo);
+      nextData.assignedTo = activityData.assignedTo;
+      nextData.color = getUserActivityColor(activityData.assignedTo);
     }
 
     const updated = await teamActivityRepository.updateById(activityId, nextData);

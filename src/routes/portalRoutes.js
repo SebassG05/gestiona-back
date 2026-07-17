@@ -5,6 +5,7 @@ import opportunityWorkbookController from '../controllers/opportunityWorkbookCon
 import proposalContactController from '../controllers/proposalContactController.js';
 import proposalController from '../controllers/proposalController.js';
 import proposalRelationController from '../controllers/proposalRelationController.js';
+import businessTripController from '../controllers/businessTripController.js';
 import teamActivityController from '../controllers/teamActivityController.js';
 import teamVacationController from '../controllers/teamVacationController.js';
 import authenticate from '../middlewares/authenticate.js';
@@ -54,6 +55,10 @@ router.delete('/:portalId/team-activities/:activityId', authenticate, teamActivi
 router.get('/:portalId/team-vacations', authenticate, teamVacationController.list);
 router.post('/:portalId/team-vacations', authenticate, teamVacationController.create);
 router.delete('/:portalId/team-vacations/:vacationId', authenticate, teamVacationController.remove);
+router.get('/:portalId/business-trips', authenticate, businessTripController.list);
+router.post('/:portalId/business-trips', authenticate, businessTripController.create);
+router.patch('/:portalId/business-trips/:tripId', authenticate, businessTripController.update);
+router.delete('/:portalId/business-trips/:tripId', authenticate, businessTripController.remove);
 router.post(
   '/:portalId/invitations',
   authenticate,
