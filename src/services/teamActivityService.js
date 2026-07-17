@@ -3,6 +3,8 @@ import portalRepository from '../repositories/portalRepository.js';
 import teamActivityRepository from '../repositories/teamActivityRepository.js';
 
 const toObjectId = (value) => value?.toString?.() || String(value);
+const getEntityId = (value) => value?._id || value?.id || value;
+const idsEqual = (first, second) => toObjectId(getEntityId(first)) === toObjectId(getEntityId(second));
 const DEFAULT_ACTIVITY_COLOR = '#ff5a1f';
 const USER_ACTIVITY_COLORS = [
   '#ff5a1f',
@@ -56,6 +58,14 @@ const mapUser = (user) => ({
   email: user?.email || '',
 });
 
+const mapComment = (comment) => ({
+  id: comment?._id,
+  author: mapUser(comment?.author),
+  message: comment?.message || '',
+  createdAt: comment?.createdAt,
+  updatedAt: comment?.updatedAt,
+});
+
 const getUserActivityColor = (userId) => {
   const source = toObjectId(userId || '');
   if (!source) return DEFAULT_ACTIVITY_COLOR;
@@ -78,6 +88,7 @@ const mapActivity = (activity) => ({
   workDate: activity.workDate,
   author: mapUser(activity.author),
   assignedTo: mapUser(activity.assignedTo),
+  comments: (activity.comments || []).map(mapComment),
   createdAt: activity.createdAt,
   updatedAt: activity.updatedAt,
 });
@@ -97,7 +108,7 @@ const getPortalForMember = async ({ portalId, userId }) => {
     throw error;
   }
 
-  const canAccess = portal.members.some((member) => member.equals(userId));
+  const canAccess = portal.members.some((member) => idsEqual(member, userId));
   if (!canAccess) {
     const error = new Error('No tienes acceso a este portal');
     error.statusCode = 403;
@@ -114,7 +125,7 @@ const assertPortalMember = (portal, memberId) => {
     throw error;
   }
 
-  const isMember = portal.members.some((member) => member.equals(memberId));
+  const isMember = portal.members.some((member) => idsEqual(member, memberId));
   if (!isMember) {
     const error = new Error('El responsable debe pertenecer al portal');
     error.statusCode = 400;
@@ -123,9 +134,9 @@ const assertPortalMember = (portal, memberId) => {
 };
 
 const assertCanManageActivity = ({ portal, activity, userId }) => {
-  const isOwner = portal.owner.equals(userId);
-  const isAuthor = activity.author.equals(userId);
-  const isAssigned = activity.assignedTo.equals(userId);
+  const isOwner = idsEqual(portal.owner, userId);
+  const isAuthor = idsEqual(activity.author, userId);
+  const isAssigned = idsEqual(activity.assignedTo, userId);
 
   if (!isOwner && !isAuthor && !isAssigned) {
     const error = new Error('No puedes modificar esta actividad');
@@ -167,9 +178,7 @@ const teamActivityService = {
       color: getUserActivityColor(userId),
     });
 
-    const populated = await teamActivityRepository.findById(activity._id)
-      .populate('author', 'username email')
-      .populate('assignedTo', 'username email');
+    const populated = await teamActivityRepository.findById(activity._id);
 
     return mapActivity(populated);
   },
@@ -178,7 +187,7 @@ const teamActivityService = {
     const portal = await getPortalForMember({ portalId, userId });
     const activity = await teamActivityRepository.findById(activityId);
 
-    if (!activity || !activity.portal.equals(portalId)) {
+    if (!activity || !idsEqual(activity.portal, portalId)) {
       const error = new Error('La actividad no existe');
       error.statusCode = 404;
       throw error;
@@ -208,7 +217,7 @@ const teamActivityService = {
     const portal = await getPortalForMember({ portalId, userId });
     const activity = await teamActivityRepository.findById(activityId);
 
-    if (!activity || !activity.portal.equals(portalId)) {
+    if (!activity || !idsEqual(activity.portal, portalId)) {
       const error = new Error('La actividad no existe');
       error.statusCode = 404;
       throw error;
@@ -218,6 +227,73 @@ const teamActivityService = {
     await teamActivityRepository.deleteById(activityId);
 
     return { id: activityId };
+  },
+
+  addComment: async ({ portalId, activityId, userId, message }) => {
+    await getPortalForMember({ portalId, userId });
+    const activity = await teamActivityRepository.findById(activityId);
+
+    if (!activity || !idsEqual(activity.portal, portalId)) {
+      const error = new Error('La actividad no existe');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const cleanMessage = `${message || ''}`.trim();
+    if (!cleanMessage) {
+      const error = new Error('Escribe un comentario antes de enviarlo');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (!Array.isArray(activity.comments)) {
+      activity.comments = [];
+    }
+
+    activity.comments.push({
+      author: userId,
+      message: cleanMessage,
+    });
+    await activity.save();
+
+    const populated = await teamActivityRepository.findById(activity._id);
+    return mapActivity(populated);
+  },
+
+  removeComment: async ({ portalId, activityId, commentId, userId }) => {
+    const portal = await getPortalForMember({ portalId, userId });
+    const activity = await teamActivityRepository.findById(activityId);
+
+    if (!activity || !idsEqual(activity.portal, portalId)) {
+      const error = new Error('La actividad no existe');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const comment = activity.comments.id(commentId);
+    if (!comment) {
+      const error = new Error('El comentario no existe');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const canRemove =
+      idsEqual(portal.owner, userId) ||
+      idsEqual(activity.author, userId) ||
+      idsEqual(activity.assignedTo, userId) ||
+      idsEqual(comment.author, userId);
+
+    if (!canRemove) {
+      const error = new Error('No puedes eliminar este comentario');
+      error.statusCode = 403;
+      throw error;
+    }
+
+    activity.comments.pull(commentId);
+    await activity.save();
+
+    const populated = await teamActivityRepository.findById(activity._id);
+    return mapActivity(populated);
   },
 };
 

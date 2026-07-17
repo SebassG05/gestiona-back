@@ -57,6 +57,44 @@ const teamActivityController = {
     }
   },
 
+  addComment: async (req, res, next) => {
+    try {
+      const activity = await teamActivityService.addComment({
+        portalId: req.params.portalId,
+        activityId: req.params.activityId,
+        userId: req.user.id,
+        message: req.body.message,
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: 'Comentario anadido correctamente',
+        data: activity,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  removeComment: async (req, res, next) => {
+    try {
+      const activity = await teamActivityService.removeComment({
+        portalId: req.params.portalId,
+        activityId: req.params.activityId,
+        commentId: req.params.commentId,
+        userId: req.user.id,
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Comentario eliminado correctamente',
+        data: activity,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   remove: async (req, res, next) => {
     try {
       const result = await teamActivityService.remove({

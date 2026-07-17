@@ -1,9 +1,15 @@
 import TeamActivity from '../models/TeamActivity.js';
 
+const populateActivity = (query) =>
+  query
+    .populate('author', 'username email')
+    .populate('assignedTo', 'username email')
+    .populate('comments.author', 'username email');
+
 const teamActivityRepository = {
   create: (activityData) => TeamActivity.create(activityData),
 
-  findById: (id) => TeamActivity.findById(id),
+  findById: (id) => populateActivity(TeamActivity.findById(id)),
 
   findByPortal: ({ portalId, startDate, endDate }) => {
     const query = { portal: portalId };
@@ -14,16 +20,13 @@ const teamActivityRepository = {
       if (endDate) query.workDate.$lte = endDate;
     }
 
-    return TeamActivity.find(query)
-      .populate('author', 'username email')
-      .populate('assignedTo', 'username email')
-      .sort({ workDate: 1, createdAt: 1 });
+    return populateActivity(TeamActivity.find(query)).sort({ workDate: 1, createdAt: 1 });
   },
 
   updateById: (id, activityData) =>
-    TeamActivity.findByIdAndUpdate(id, activityData, { new: true, runValidators: true })
-      .populate('author', 'username email')
-      .populate('assignedTo', 'username email'),
+    populateActivity(
+      TeamActivity.findByIdAndUpdate(id, activityData, { new: true, runValidators: true })
+    ),
 
   deleteById: (id) => TeamActivity.findByIdAndDelete(id),
 };

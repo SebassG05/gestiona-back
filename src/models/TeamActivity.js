@@ -1,5 +1,24 @@
 import mongoose from 'mongoose';
 
+const teamActivityCommentSchema = new mongoose.Schema(
+  {
+    author: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    message: {
+      type: String,
+      required: [true, 'El comentario es obligatorio'],
+      trim: true,
+      maxlength: [800, 'El comentario no puede superar 800 caracteres'],
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
 const teamActivitySchema = new mongoose.Schema(
   {
     portal: {
@@ -51,6 +70,10 @@ const teamActivitySchema = new mongoose.Schema(
       trim: true,
       default: '#ff5a1f',
       match: [/^#[0-9A-Fa-f]{6}$/, 'El color no es valido'],
+    },
+    comments: {
+      type: [teamActivityCommentSchema],
+      default: [],
     },
   },
   {

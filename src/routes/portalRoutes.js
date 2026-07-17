@@ -40,6 +40,16 @@ router.get('/:portalId/members', authenticate, portalController.listMembers);
 router.get('/:portalId/team-activities', authenticate, teamActivityController.list);
 router.post('/:portalId/team-activities', authenticate, teamActivityController.create);
 router.patch('/:portalId/team-activities/:activityId', authenticate, teamActivityController.update);
+router.post(
+  '/:portalId/team-activities/:activityId/comments',
+  authenticate,
+  teamActivityController.addComment
+);
+router.delete(
+  '/:portalId/team-activities/:activityId/comments/:commentId',
+  authenticate,
+  teamActivityController.removeComment
+);
 router.delete('/:portalId/team-activities/:activityId', authenticate, teamActivityController.remove);
 router.get('/:portalId/team-vacations', authenticate, teamVacationController.list);
 router.post('/:portalId/team-vacations', authenticate, teamVacationController.create);
