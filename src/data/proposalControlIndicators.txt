@@ -1,0 +1,88 @@
+Completar identificador y nombre de la convocatoria, topic, tipo de acción, título, acrónimo y resumen de la propuesta.
+Comprobar que el título, acrónimo y resumen describen de forma clara y coherente el proyecto.
+Incluir la lista de participantes con número, nombre de la organización y país, usando la misma numeración que en Part A.
+Completar todos los datos administrativos de participantes, contactos, declaraciones y formularios exigidos en el portal.
+Validar presupuesto, costes, person-months y distribución de recursos de todos los participantes.
+Completar la autoevaluación ética, seguridad y demás declaraciones aplicables; preparar información adicional cuando sea necesaria.
+Comprobar el límite de páginas, formato A4, márgenes mínimos, tamaño de fuente, interlineado y legibilidad de tablas y figuras.
+Eliminar las páginas de instrucciones con marca de agua antes de generar el PDF final.
+Verificar que la propuesta es autocontenida y no utiliza hipervínculos para eludir el límite de páginas.
+Revisar y validar cualquier contenido generado con IA, comprobar fuentes y citas, evitar plagio y declarar de forma transparente su utilización.
+Describir de forma breve y clara los objetivos del proyecto.
+Explicar por qué los objetivos son pertinentes para el topic y responden al scope de la convocatoria.
+Definir objetivos medibles, verificables y asociados a resultados o indicadores concretos.
+Demostrar que los objetivos son realistas y alcanzables dentro del plazo y los recursos del proyecto.
+Describir el estado del arte y el problema o gap que todavía no está resuelto.
+Explicar cómo la propuesta supera el estado del arte y cuál es su nivel de ambición.
+Identificar conceptos, enfoques, productos, servicios o modelos nuevos y cualquier avance especialmente innovador o disruptivo.
+Comparar, cuando corresponda, con soluciones disponibles en el mercado e indicar búsquedas de patentes o publicaciones realizadas.
+Posicionar el proyecto en términos de madurez de I+D+i e indicar, cuando proceda, el TRL inicial y el TRL previsto al finalizar.
+Describir y explicar la metodología global del proyecto como una narrativa coherente.
+Presentar los conceptos, modelos y supuestos que sustentan la metodología.
+Explicar cómo la metodología permitirá alcanzar cada objetivo del proyecto.
+Identificar los principales retos metodológicos y explicar cómo se superarán.
+Describir actividades nacionales o internacionales de I+D+i cuyos resultados alimentarán el proyecto y cómo se establecerá esa conexión.
+Explicar cómo se integrarán conocimientos y métodos de distintas disciplinas; justificarlo cuando no sea necesario un enfoque interdisciplinar.
+Mostrar la contribución de las ciencias sociales y humanidades cuando el topic lo exija, o justificar su falta de relevancia.
+Integrar la dimensión de sexo y género en el contenido de I+D+i, o justificar su falta de relevancia cuando esté permitido.
+Describir las prácticas de ciencia abierta y justificar su adecuación a la naturaleza del proyecto.
+Explicar la gestión, acceso, reproducibilidad y reutilización de publicaciones, datos, software, modelos, algoritmos y otros resultados de investigación.
+Prever un Data Management Plan y aplicar los principios FAIR a los datos y resultados de investigación.
+Describir la participación de ciudadanía, sociedad civil, usuarios finales y otros actores del conocimiento cuando sea apropiado.
+Presentar una narrativa lógica que conecte resultados, difusión y explotación, outcomes e impactos más allá de la duración del proyecto.
+Explicar la contribución única de los resultados del proyecto a cada expected outcome del topic.
+Explicar la contribución a los impactos más amplios de la destination a largo plazo.
+Incluir estimaciones cuantificadas de los efectos esperados cuando sea posible y significativo.
+Identificar y segmentar los grupos objetivo, usuarios, beneficiarios y actores que adoptarán los resultados.
+Identificar requisitos, dependencias y barreras externas —regulatorias, de mercado, tecnológicas o de comportamiento— que puedan afectar a outcomes e impactos.
+Explicar cómo podrían evolucionar las barreras y qué medidas de mitigación se aplicarán si los supuestos no se cumplen.
+Preparar una primera versión del plan de difusión y explotación de resultados, incluidas las actividades de comunicación.
+Definir medidas concretas de dissemination, exploitation y communication y asociarlas a grupos objetivo específicos.
+Definir objetivos, mensajes principales, herramientas, canales, calendario y responsables de las actividades de comunicación.
+Planificar medidas proporcionadas al proyecto durante su ejecución y después de su finalización, incluyendo seguimiento y estandarización cuando proceda.
+Justificar por qué cada medida es adecuada para alcanzar al grupo objetivo correspondiente.
+Describir una vía creíble de comercialización para las innovaciones cuando resulte relevante, especialmente en Innovation Actions.
+Justificar que una explotación principal en terceros países no asociados sigue siendo de interés para la Unión Europea, cuando corresponda.
+Describir el posible feedback a políticas públicas y su contribución al diseño, seguimiento o revisión de medidas e iniciativas.
+Definir la estrategia de propiedad intelectual, protección, titularidad, acceso y uso de patentes, copyright, diseños, secretos comerciales u otros derechos.
+Prever el plan de difusión y explotación con comunicación como entregable durante los primeros seis meses y su actualización periódica.
+Resumir las necesidades específicas que originan el proyecto.
+Resumir los resultados concretos que se generarán al finalizar el proyecto.
+Resumir las medidas de dissemination, exploitation y communication aplicadas a los resultados.
+Identificar los grupos objetivo que utilizarán, adoptarán o se beneficiarán de los resultados.
+Resumir los outcomes o cambios esperados tras la difusión y explotación de los resultados.
+Resumir los impactos científicos, económicos, tecnológicos, ambientales y sociales esperados.
+Presentar brevemente la estructura global y la lógica del plan de trabajo.
+Incluir la planificación temporal de work packages y componentes mediante un diagrama de Gantt o equivalente.
+Incluir una representación gráfica de la relación entre componentes mediante un PERT o equivalente.
+Completar la lista de work packages con número, título, líder, person-months y meses de inicio y finalización.
+Definir para cada work package sus objetivos y su contribución al proyecto.
+Describir tareas, actividades, líder y función de cada participante, cuantificando el trabajo previsto.
+Justificar quién realizará cada actividad, por qué es necesaria y qué recursos humanos, equipos, consumibles o reuniones requiere.
+Incluir únicamente entregables esenciales para el seguimiento efectivo del proyecto.
+Completar para cada entregable número, nombre, descripción, WP, líder, tipo, nivel de difusión y fecha de entrega.
+Aplicar la numeración de entregables por WP y utilizar correctamente los códigos de tipo y nivel de difusión.
+Incluir como entregables diferenciados, dentro de los primeros seis meses, el Data Management Plan y el plan de difusión, explotación y comunicación.
+Definir hitos verificables con número, nombre, WP relacionado, fecha y medios de verificación.
+Identificar riesgos críticos de implementación e indicar probabilidad, severidad, WP afectado y medidas de mitigación.
+Indicar los person-months por participante y work package, identificando claramente al líder de cada WP.
+Describir y justificar las tareas subcontratadas por participante, evitando subcontratar tareas centrales del proyecto.
+Justificar los equipos cuando los costes de compra superen el 15 % de los costes de personal del participante.
+Asegurar que los recursos asignados a cada WP son coherentes con sus objetivos, tareas, entregables y nivel de esfuerzo.
+Comprobar la consistencia entre esta sección, el presupuesto de Part A y los person-months de las descripciones de WP.
+Dar visibilidad suficiente a gestión del proyecto, gestión de datos, dissemination, exploitation y communication mediante WP o tareas diferenciadas.
+Describir cómo el consorcio responde a los objetivos y reúne los conocimientos disciplinarios e interdisciplinarios necesarios.
+Mostrar la experiencia adecuada en ciencias sociales y humanidades, ciencia abierta y dimensión de género cuando resulte relevante.
+Demostrar que los socios tienen acceso a las infraestructuras críticas necesarias.
+Explicar la complementariedad entre socios y la cobertura de la cadena de valor cuando corresponda.
+Definir la contribución, función, capacidad y recursos de cada participante, evitando socios sin un papel claro.
+Describir la participación industrial o comercial necesaria para explotar los resultados y su coherencia con la sección 2.2.
+Justificar la participación y financiación de entidades de terceros países u organizaciones internacionales no elegibles automáticamente cuando sea aplicable.
+Preparar el anexo de ensayos clínicos cuando la convocatoria lo solicite.
+Preparar el anexo de apoyo financiero a terceros cuando la convocatoria lo solicite.
+Preparar el anexo de seguridad para convocatorias identificadas como security sensitive.
+Incluir información ética adicional en un anexo cuando el espacio disponible en Part A no sea suficiente.
+Comprobar la coherencia entre objetivos, metodología, resultados, outcomes, impactos, work packages, entregables, recursos y presupuesto.
+Verificar que cada requisito del topic y cada criterio de evaluación puede localizarse fácilmente en la propuesta.
+Realizar una simulación de evaluación independiente de Excellence, Impact e Implementation antes del envío.
+Cerrar comentarios, errores, contradicciones, campos pendientes y referencias cruzadas antes de generar la versión final.

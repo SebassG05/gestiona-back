@@ -4,6 +4,7 @@ import portalExcelController from '../controllers/portalExcelController.js';
 import opportunityWorkbookController from '../controllers/opportunityWorkbookController.js';
 import proposalContactController from '../controllers/proposalContactController.js';
 import proposalController from '../controllers/proposalController.js';
+import proposalControlController from '../controllers/proposalControlController.js';
 import proposalRelationController from '../controllers/proposalRelationController.js';
 import businessTripController from '../controllers/businessTripController.js';
 import teamActivityController from '../controllers/teamActivityController.js';
@@ -33,6 +34,9 @@ import {
 } from '../validations/proposalValidation.js';
 
 const router = Router();
+
+router.get('/:portalId/proposals/:proposalId/control', authenticate, proposalControlController.get);
+router.put('/:portalId/proposals/:proposalId/control', authenticate, proposalControlController.save);
 
 router.get('/microsoft/callback', portalExcelController.callback);
 router.get('/mine', authenticate, portalController.listMine);

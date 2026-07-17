@@ -3,6 +3,7 @@ import proposalContactRepository from '../repositories/proposalContactRepository
 import proposalCompanyRepository from '../repositories/proposalCompanyRepository.js';
 import proposalOpportunityRepository from '../repositories/proposalOpportunityRepository.js';
 import proposalRepository from '../repositories/proposalRepository.js';
+import ProposalControl from '../models/ProposalControl.js';
 
 const nullableNumber = (value) => {
   if (value === '' || value === null || value === undefined) return null;
@@ -213,6 +214,7 @@ const proposalService = {
       proposalContactRepository.deleteByProposal(proposalId, portalId),
       proposalOpportunityRepository.deleteByProposal(proposalId, portalId),
       proposalCompanyRepository.deleteByProposal(proposalId, portalId),
+      ProposalControl.deleteOne({ proposal: proposalId, portal: portalId }),
     ]);
 
     return {
@@ -230,6 +232,7 @@ const proposalService = {
       proposalContactRepository.deleteByPortal(portalId),
       proposalOpportunityRepository.deleteByPortal(portalId),
       proposalCompanyRepository.deleteByPortal(portalId),
+      ProposalControl.deleteMany({ portal: portalId }),
     ]);
 
     return {
