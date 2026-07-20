@@ -9,6 +9,7 @@ import proposalRelationController from '../controllers/proposalRelationControlle
 import businessTripController from '../controllers/businessTripController.js';
 import teamActivityController from '../controllers/teamActivityController.js';
 import teamVacationController from '../controllers/teamVacationController.js';
+import portalFavoriteController from '../controllers/portalFavoriteController.js';
 import authenticate from '../middlewares/authenticate.js';
 import validateRequest from '../middlewares/validateRequest.js';
 import { respondInvitationValidation } from '../validations/invitationValidation.js';
@@ -42,6 +43,8 @@ router.get('/microsoft/callback', portalExcelController.callback);
 router.get('/mine', authenticate, portalController.listMine);
 router.get('/invitations/:code', authenticate, portalController.getInvitationByCode);
 router.get('/:portalId/members', authenticate, portalController.listMembers);
+router.get('/:portalId/favorites', authenticate, portalFavoriteController.list);
+router.put('/:portalId/favorites/:entityType/:entityId', authenticate, portalFavoriteController.set);
 router.get('/:portalId/team-activities', authenticate, teamActivityController.list);
 router.post('/:portalId/team-activities', authenticate, teamActivityController.create);
 router.patch('/:portalId/team-activities/:activityId', authenticate, teamActivityController.update);
