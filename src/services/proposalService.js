@@ -105,14 +105,24 @@ const getAccessiblePortal = async ({ portalId, userId }) => {
 const proposalService = {
   listByPortal: async ({ portalId, userId, page, limit }) => {
     await getAccessiblePortal({ portalId, userId });
-    const total = await proposalRepository.countByPortal(portalId);
+    const requestedLimit = Math.min(Math.max(Number(limit) || 25, 1), 100);
+    const requestedPage = Math.max(Number(page) || 1, 1);
+    const [total, requestedProposals] = await Promise.all([
+      proposalRepository.countByPortal(portalId),
+      proposalRepository.findByPortalPaginated({
+        portalId,
+        skip: (requestedPage - 1) * requestedLimit,
+        limit: requestedLimit,
+      }),
+    ]);
     const pagination = buildPagination({ page, limit, total });
-    const skip = (pagination.page - 1) * pagination.limit;
-    const proposals = await proposalRepository.findByPortalPaginated({
-      portalId,
-      skip,
-      limit: pagination.limit,
-    });
+    const proposals = pagination.page === requestedPage
+      ? requestedProposals
+      : await proposalRepository.findByPortalPaginated({
+          portalId,
+          skip: (pagination.page - 1) * pagination.limit,
+          limit: pagination.limit,
+        });
     const contactCounts = proposals.length
       ? await proposalContactRepository.countByProposalIds(
           portalId,

@@ -224,11 +224,10 @@ const opportunityWorkbookService = {
   },
 
   getById: async ({ portalId, workbookId, userId, page, limit, filters }) => {
-    await assertPortalAccess({ portalId, userId });
-    const workbook = await opportunityWorkbookRepository.findByIdAndPortal(
-      workbookId,
-      portalId
-    );
+    const [, workbook] = await Promise.all([
+      assertPortalAccess({ portalId, userId }),
+      opportunityWorkbookRepository.findByIdAndPortal(workbookId, portalId),
+    ]);
 
     if (!workbook) {
       const error = new Error('La página de oportunidades no existe');
@@ -241,28 +240,45 @@ const opportunityWorkbookService = {
       rawFilters: filters,
     });
     const hasFilters = Object.keys(mongoFilters).length > 0;
-    const total = hasFilters
-      ? await opportunityWorkbookRepository.countRowsFiltered({
+    const requestedLimit = Math.min(Math.max(Number(limit) || 80, 1), 200);
+    const requestedPage = Math.max(Number(page) || 1, 1);
+    const requestedRowsPromise = hasFilters
+      ? opportunityWorkbookRepository.listRowsFilteredPaginated({
           workbookId,
           portalId,
           filters: mongoFilters,
+          skip: (requestedPage - 1) * requestedLimit,
+          limit: requestedLimit,
         })
-      : workbook.rowCount ?? (await opportunityWorkbookRepository.countRows(workbookId, portalId));
-    const pagination = buildPagination({ page, limit, total });
-    const rows = hasFilters
-      ? await opportunityWorkbookRepository.listRowsFilteredPaginated({
+      : opportunityWorkbookRepository.listRowsPaginated({
           workbookId,
           portalId,
-          filters: mongoFilters,
-          skip: (pagination.page - 1) * pagination.limit,
-          limit: pagination.limit,
-        })
-      : await opportunityWorkbookRepository.listRowsPaginated({
-          workbookId,
-          portalId,
-          skip: (pagination.page - 1) * pagination.limit,
-          limit: pagination.limit,
+          skip: (requestedPage - 1) * requestedLimit,
+          limit: requestedLimit,
         });
+    const totalPromise = hasFilters
+      ? opportunityWorkbookRepository.countRowsFiltered({ workbookId, portalId, filters: mongoFilters })
+      : workbook.rowCount == null
+        ? opportunityWorkbookRepository.countRows(workbookId, portalId)
+        : Promise.resolve(workbook.rowCount);
+    const [total, requestedRows] = await Promise.all([totalPromise, requestedRowsPromise]);
+    const pagination = buildPagination({ page, limit, total });
+    const rows = pagination.page === requestedPage
+      ? requestedRows
+      : hasFilters
+        ? await opportunityWorkbookRepository.listRowsFilteredPaginated({
+            workbookId,
+            portalId,
+            filters: mongoFilters,
+            skip: (pagination.page - 1) * pagination.limit,
+            limit: pagination.limit,
+          })
+        : await opportunityWorkbookRepository.listRowsPaginated({
+            workbookId,
+            portalId,
+            skip: (pagination.page - 1) * pagination.limit,
+            limit: pagination.limit,
+          });
 
     if ((workbook.category || 'opportunities') !== 'contacts' && rows.length) {
       const counts = await opportunityContactLinkRepository.countByOpportunityRows(

@@ -57,6 +57,7 @@ const proposalContactSchema = new mongoose.Schema(
 );
 
 proposalContactSchema.index({ proposal: 1, email: 1 });
+proposalContactSchema.index({ portal: 1, proposal: 1 });
 
 const ProposalContact = mongoose.model('ProposalContact', proposalContactSchema);
 

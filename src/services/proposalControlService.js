@@ -53,14 +53,16 @@ const defaultItems = () =>
   }));
 
 const assertAccess = async ({ portalId, proposalId, userId }) => {
-  const portal = await portalRepository.findById(portalId);
+  const [portal, proposal] = await Promise.all([
+    portalRepository.findById(portalId),
+    proposalRepository.findByIdAndPortal(proposalId, portalId),
+  ]);
   if (!portal || !portal.members.some((member) => member.equals(userId))) {
     const error = new Error('No tienes acceso a este portal');
     error.statusCode = portal ? 403 : 404;
     throw error;
   }
 
-  const proposal = await proposalRepository.findByIdAndPortal(proposalId, portalId);
   if (!proposal) {
     const error = new Error('La propuesta no existe');
     error.statusCode = 404;

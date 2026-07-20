@@ -87,6 +87,7 @@ proposalSchema.index(
   { portal: 1, sourceOpportunityRow: 1 },
   { unique: true, partialFilterExpression: { sourceOpportunityRow: { $type: 'objectId' } } }
 );
+proposalSchema.index({ portal: 1, createdAt: -1 });
 
 const Proposal = mongoose.model('Proposal', proposalSchema);
 
