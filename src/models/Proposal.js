@@ -67,10 +67,25 @@ const proposalSchema = new mongoose.Schema(
     proximaAccion: optionalString,
     fuenteUrl: optionalString,
     notas: optionalString,
+    sourceOpportunityWorkbook: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'OpportunityWorkbook',
+      default: null,
+    },
+    sourceOpportunityRow: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'OpportunityWorkbookRow',
+      default: null,
+    },
   },
   {
     timestamps: true,
   }
+);
+
+proposalSchema.index(
+  { portal: 1, sourceOpportunityRow: 1 },
+  { unique: true, partialFilterExpression: { sourceOpportunityRow: { $type: 'objectId' } } }
 );
 
 const Proposal = mongoose.model('Proposal', proposalSchema);

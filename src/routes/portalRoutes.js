@@ -71,6 +71,11 @@ router.post(
   portalController.inviteMembers
 );
 router.delete('/:portalId/members/:memberId', authenticate, portalController.removeMember);
+router.post(
+  '/:portalId/opportunity-workbooks/promote-to-proposals',
+  authenticate,
+  opportunityWorkbookController.promoteToProposals
+);
 router.get(
   '/:portalId/opportunity-workbooks',
   authenticate,

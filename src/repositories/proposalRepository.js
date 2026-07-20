@@ -23,6 +23,10 @@ const proposalRepository = {
       .limit(limit)
       .lean(),
   countByPortal: (portalId) => Proposal.countDocuments({ portal: portalId }),
+  findBySourceOpportunityRows: ({ portalId, rowIds }) =>
+    Proposal.find({ portal: portalId, sourceOpportunityRow: { $in: rowIds } })
+      .select('sourceOpportunityRow')
+      .lean(),
   updateByIdAndPortal: (proposalId, portalId, proposalData) =>
     Proposal.findOneAndUpdate(
       { _id: proposalId, portal: portalId },

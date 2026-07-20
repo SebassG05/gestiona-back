@@ -1,6 +1,25 @@
 import opportunityWorkbookService from '../services/opportunityWorkbookService.js';
 
 const opportunityWorkbookController = {
+  promoteToProposals: async (req, res, next) => {
+    try {
+      const data = await opportunityWorkbookService.promoteToProposals({
+        portalId: req.params.portalId,
+        userId: req.user.id,
+        rowIds: req.body.rowIds,
+      });
+      return res.status(data.created.length ? 201 : 200).json({
+        success: true,
+        message: data.created.length
+          ? `${data.created.length} propuesta${data.created.length === 1 ? '' : 's'} creada${data.created.length === 1 ? '' : 's'}`
+          : 'Las oportunidades seleccionadas ya estaban convertidas',
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   list: async (req, res, next) => {
     try {
       const data = await opportunityWorkbookService.list({

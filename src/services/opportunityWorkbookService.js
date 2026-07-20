@@ -1,6 +1,8 @@
+import mongoose from 'mongoose';
 import opportunityWorkbookRepository from '../repositories/opportunityWorkbookRepository.js';
 import opportunityContactLinkRepository from '../repositories/opportunityContactLinkRepository.js';
 import portalRepository from '../repositories/portalRepository.js';
+import proposalRepository from '../repositories/proposalRepository.js';
 
 const assertPortalAccess = async ({ portalId, userId }) => {
   const portal = await portalRepository.findById(portalId);
@@ -27,6 +29,58 @@ const normalizeCell = (value) => {
 const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const normalizeCategory = (category) =>
   category === 'contacts' ? 'contacts' : 'opportunities';
+
+const normalizeHeader = (value) =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[()/_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
+
+const getRowValue = (row, names) => {
+  const normalizedNames = names.map(normalizeHeader);
+  const index = (row.workbook?.headers || []).findIndex((header) =>
+    normalizedNames.includes(normalizeHeader(header))
+  );
+  const value = index >= 0 ? row.values?.[index] : '';
+  return value === null || value === undefined ? '' : String(value).trim();
+};
+
+const parseOpportunityDate = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const buildProposalFromOpportunity = ({ row, portalId, userId }) => {
+  const topicId = getRowValue(row, ['Topic ID', 'ID', 'Anuncio y n']);
+  const project = getRowValue(row, ['Proyecto', 'Proyectos', 'Nombre', 'Destination']);
+  const destination = getRowValue(row, ['Destination', 'Sub-destination', 'Sub destination']);
+  const title = project || topicId || `Oportunidad fila ${row.rowNumber}`;
+  const sourceLabel = `${row.workbook?.name || 'Oportunidades'} · fila ${row.rowNumber}`;
+
+  return {
+    portal: portalId,
+    createdBy: userId,
+    lifecycleStatus: 'active',
+    nombre: title.slice(0, 140),
+    proposalId: topicId,
+    programa: getRowValue(row, ['Programa']) || 'Horizon Europe',
+    convocatoria: getRowValue(row, ['Convocatoria', 'Call', 'Call identifier']),
+    tipo: getRowValue(row, ['Type of action', 'Tipo']),
+    deadlineApertura: parseOpportunityDate(getRowValue(row, ['Deadline', 'Deadline apertura'])),
+    fase: 'Preparacion',
+    estado: 'En preparacion',
+    prioridad: 'Media',
+    fuenteUrl: getRowValue(row, ['Link call', 'Fuente URL', 'URL']),
+    proximaAccion: 'Revisar la oportunidad y completar los datos de la propuesta.',
+    notas: `Propuesta creada desde ${sourceLabel}${destination ? ` · ${destination}` : ''}.`,
+    sourceOpportunityWorkbook: row.workbook?._id,
+    sourceOpportunityRow: row._id,
+  };
+};
 
 const parseFilters = (rawFilters) => {
   if (!rawFilters) return [];
@@ -106,6 +160,48 @@ const buildPagination = ({ page, limit, total }) => {
 };
 
 const opportunityWorkbookService = {
+  promoteToProposals: async ({ portalId, userId, rowIds }) => {
+    await assertPortalAccess({ portalId, userId });
+    const uniqueRowIds = [...new Set(Array.isArray(rowIds) ? rowIds : [])];
+
+    if (!uniqueRowIds.length || uniqueRowIds.length > 50 || uniqueRowIds.some((id) => !mongoose.Types.ObjectId.isValid(id))) {
+      const error = new Error('Selecciona entre 1 y 50 oportunidades validas');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const rows = await opportunityWorkbookRepository.findRowsByIds({
+      portalId,
+      rowIds: uniqueRowIds,
+      category: 'opportunities',
+    });
+    const rowById = new Map(rows.map((row) => [row._id.toString(), row]));
+    const orderedRows = uniqueRowIds.map((id) => rowById.get(id)).filter(Boolean);
+
+    if (orderedRows.length !== uniqueRowIds.length) {
+      const error = new Error('Alguna oportunidad ya no existe o no pertenece al portal');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const existing = await proposalRepository.findBySourceOpportunityRows({
+      portalId,
+      rowIds: uniqueRowIds,
+    });
+    const existingIds = new Set(existing.map((proposal) => proposal.sourceOpportunityRow.toString()));
+    const rowsToCreate = orderedRows.filter((row) => !existingIds.has(row._id.toString()));
+    const created = rowsToCreate.length
+      ? await proposalRepository.createMany(
+          rowsToCreate.map((row) => buildProposalFromOpportunity({ row, portalId, userId }))
+        )
+      : [];
+
+    return {
+      created: created.map((proposal) => ({ id: proposal._id.toString(), nombre: proposal.nombre })),
+      skipped: existing.length,
+    };
+  },
+
   list: async ({ portalId, userId, category }) => {
     await assertPortalAccess({ portalId, userId });
     return opportunityWorkbookRepository.listByPortal(portalId, normalizeCategory(category));
