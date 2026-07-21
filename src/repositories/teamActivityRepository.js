@@ -15,9 +15,18 @@ const teamActivityRepository = {
     const query = { portal: portalId };
 
     if (startDate || endDate) {
-      query.workDate = {};
-      if (startDate) query.workDate.$gte = startDate;
-      if (endDate) query.workDate.$lte = endDate;
+      query.$and = [];
+      if (endDate) query.$and.push({ workDate: { $lte: endDate } });
+      if (startDate) {
+        query.$and.push({
+          $or: [
+            { endDate: { $gte: startDate } },
+            { endDate: null, workDate: { $gte: startDate } },
+            { endDate: { $exists: false }, workDate: { $gte: startDate } },
+          ],
+        });
+      }
+      if (!query.$and.length) delete query.$and;
     }
 
     return populateActivity(TeamActivity.find(query)).sort({ workDate: 1, createdAt: 1 });

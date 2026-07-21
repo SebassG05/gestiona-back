@@ -55,6 +55,11 @@ const teamActivitySchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    endDate: {
+      type: Date,
+      default: null,
+      index: true,
+    },
     status: {
       type: String,
       enum: ['planned', 'in_progress', 'blocked', 'done'],
@@ -83,6 +88,7 @@ const teamActivitySchema = new mongoose.Schema(
 
 teamActivitySchema.index({ portal: 1, workDate: 1 });
 teamActivitySchema.index({ portal: 1, assignedTo: 1, workDate: 1 });
+teamActivitySchema.index({ portal: 1, workDate: 1, endDate: 1 });
 
 const TeamActivity = mongoose.model('TeamActivity', teamActivitySchema);
 

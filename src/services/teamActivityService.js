@@ -86,6 +86,7 @@ const mapActivity = (activity) => ({
   priority: activity.priority,
   color: getUserActivityColor(activity.assignedTo?._id || activity.assignedTo?.id || activity.assignedTo),
   workDate: activity.workDate,
+  endDate: activity.endDate || activity.workDate,
   author: mapUser(activity.author),
   assignedTo: mapUser(activity.assignedTo),
   comments: (activity.comments || []).map(mapComment),
@@ -164,7 +165,13 @@ const teamActivityService = {
 
     assertPortalMember(portal, assignedTo);
     const workDate = normalizeDate(activityData.workDate);
+    const endDate = normalizeDate(activityData.endDate || activityData.workDate);
     assertNotPastDate(workDate);
+    if (endDate < workDate) {
+      const error = new Error('La fecha de fin debe ser igual o posterior a la fecha de inicio');
+      error.statusCode = 400;
+      throw error;
+    }
 
     const activity = await teamActivityRepository.create({
       portal: portalId,
@@ -173,6 +180,7 @@ const teamActivityService = {
       title: activityData.title,
       description: activityData.description || '',
       workDate,
+      endDate,
       status: activityData.status || 'in_progress',
       priority: activityData.priority || 'medium',
       color: getUserActivityColor(assignedTo),
@@ -204,9 +212,19 @@ const teamActivityService = {
       }
     });
 
-    if (activityData.workDate) {
-      nextData.workDate = normalizeDate(activityData.workDate);
+    if (activityData.workDate || activityData.endDate) {
+      nextData.workDate = activityData.workDate
+        ? normalizeDate(activityData.workDate)
+        : activity.workDate;
+      nextData.endDate = activityData.endDate
+        ? normalizeDate(activityData.endDate)
+        : activity.endDate || activity.workDate;
       assertNotPastDate(nextData.workDate);
+      if (nextData.endDate < nextData.workDate) {
+        const error = new Error('La fecha de fin debe ser igual o posterior a la fecha de inicio');
+        error.statusCode = 400;
+        throw error;
+      }
     }
 
     if (activityData.assignedTo !== undefined) {
