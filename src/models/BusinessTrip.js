@@ -71,12 +71,10 @@ const businessTripSchema = new mongoose.Schema(
 businessTripSchema.index({ portal: 1, startDate: 1 });
 businessTripSchema.index({ portal: 1, assignedTo: 1, startDate: 1 });
 
-businessTripSchema.pre('validate', function (next) {
+businessTripSchema.pre('validate', function () {
   if (this.startDate && this.endDate && this.endDate < this.startDate) {
-    return next(new Error('La fecha de vuelta no puede ser anterior a la salida'));
+    throw new Error('La fecha de vuelta no puede ser anterior a la salida');
   }
-
-  return next();
 });
 
 const BusinessTrip = mongoose.model('BusinessTrip', businessTripSchema);
