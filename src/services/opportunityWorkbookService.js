@@ -343,9 +343,10 @@ const opportunityWorkbookService = {
       rowCount: normalizedRows.length,
     });
 
+    let createdRows = [];
     try {
       if (normalizedRows.length) {
-        await opportunityWorkbookRepository.createRows(
+        createdRows = await opportunityWorkbookRepository.createRows(
           normalizedRows.map((values, index) => ({
             portal: portalId,
             workbook: workbook._id,
@@ -360,7 +361,10 @@ const opportunityWorkbookService = {
       throw error;
     }
 
-    return workbook.toObject();
+    return {
+      ...workbook.toObject(),
+      rowIds: createdRows.map((row) => row._id.toString()),
+    };
   },
 
   remove: async ({ portalId, workbookId, userId }) => {
