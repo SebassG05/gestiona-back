@@ -245,7 +245,6 @@ const opportunityWorkbookService = {
       ? []
       : await PortalFavorite.find({
           portal: portalId,
-          user: userId,
           entityType: 'opportunity',
         }).distinct('entityId');
     const requestedLimit = Math.min(Math.max(Number(limit) || 80, 1), 200);

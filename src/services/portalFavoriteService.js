@@ -25,10 +25,10 @@ const assertPortalAccess = async (portalId, userId) => {
 
 const list = async ({ portalId, userId }) => {
   await assertPortalAccess(portalId, userId);
-  const favorites = await PortalFavorite.find({ portal: portalId, user: userId }).lean();
+  const favorites = await PortalFavorite.find({ portal: portalId }).lean();
   return {
-    proposals: favorites.filter((item) => item.entityType === 'proposal').map((item) => String(item.entityId)),
-    opportunities: favorites.filter((item) => item.entityType === 'opportunity').map((item) => String(item.entityId)),
+    proposals: [...new Set(favorites.filter((item) => item.entityType === 'proposal').map((item) => String(item.entityId)))],
+    opportunities: [...new Set(favorites.filter((item) => item.entityType === 'opportunity').map((item) => String(item.entityId)))],
   };
 };
 
@@ -40,13 +40,12 @@ const set = async ({ portalId, userId, entityType, entityId, favorite }) => {
   if (favorite) {
     const exists = await Model.exists({ _id: entityId, portal: portalId });
     if (!exists) fail('El elemento ya no existe en este portal', 404);
-    await PortalFavorite.updateOne(
-      { portal: portalId, user: userId, entityType, entityId },
-      { $setOnInsert: { portal: portalId, user: userId, entityType, entityId } },
-      { upsert: true }
-    );
+    const alreadyFavorite = await PortalFavorite.exists({ portal: portalId, entityType, entityId });
+    if (!alreadyFavorite) {
+      await PortalFavorite.create({ portal: portalId, user: userId, entityType, entityId });
+    }
   } else {
-    await PortalFavorite.deleteOne({ portal: portalId, user: userId, entityType, entityId });
+    await PortalFavorite.deleteMany({ portal: portalId, entityType, entityId });
   }
 
   return { entityType, entityId, favorite: Boolean(favorite) };
