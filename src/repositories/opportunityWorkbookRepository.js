@@ -112,13 +112,38 @@ const opportunityWorkbookRepository = {
       .sort({ rowNumber: 1 })
       .select('-__v')
       .lean(),
-  listRowsPaginated: ({ workbookId, portalId, skip, limit }) =>
-    OpportunityWorkbookRow.find({ workbook: workbookId, portal: portalId })
-      .sort({ rowNumber: 1 })
-      .skip(skip)
-      .limit(limit)
-      .select('-__v')
-      .lean(),
+  listRowsPaginated: ({ workbookId, portalId, skip, limit, favoriteIds = [] }) => {
+    if (!favoriteIds.length) {
+      return OpportunityWorkbookRow.find({ workbook: workbookId, portal: portalId })
+        .sort({ rowNumber: 1 })
+        .skip(skip)
+        .limit(limit)
+        .select('-__v')
+        .lean();
+    }
+
+    const favoriteObjectIds = favoriteIds
+      .filter((id) => mongoose.Types.ObjectId.isValid(id))
+      .map((id) => new mongoose.Types.ObjectId(id));
+
+    return OpportunityWorkbookRow.aggregate([
+      {
+        $match: {
+          workbook: new mongoose.Types.ObjectId(workbookId),
+          portal: new mongoose.Types.ObjectId(portalId),
+        },
+      },
+      {
+        $addFields: {
+          favoriteRank: { $cond: [{ $in: ['$_id', favoriteObjectIds] }, 0, 1] },
+        },
+      },
+      { $sort: { favoriteRank: 1, rowNumber: 1 } },
+      { $skip: skip },
+      { $limit: limit },
+      { $project: { __v: 0, favoriteRank: 0 } },
+    ]);
+  },
   listRowsFilteredPaginated: ({ workbookId, portalId, filters, skip, limit }) =>
     OpportunityWorkbookRow.aggregate([
       {
@@ -141,6 +166,35 @@ const opportunityWorkbookRepository = {
       portal: portalId,
       ...filters,
     }),
+  findRowPage: async ({ workbookId, portalId, rowId, limit, favoriteIds = [] }) => {
+    if (!mongoose.Types.ObjectId.isValid(rowId)) return null;
+    const baseFilter = { workbook: workbookId, portal: portalId };
+    const row = await OpportunityWorkbookRow.findOne({ ...baseFilter, _id: rowId })
+      .select('_id rowNumber')
+      .lean();
+    if (!row) return null;
+
+    const favoriteObjectIds = favoriteIds
+      .filter((id) => mongoose.Types.ObjectId.isValid(id))
+      .map((id) => new mongoose.Types.ObjectId(id));
+    const isFavorite = favoriteObjectIds.some((id) => id.equals(row._id));
+    const before = isFavorite
+      ? await OpportunityWorkbookRow.countDocuments({
+          ...baseFilter,
+          _id: { $in: favoriteObjectIds },
+          rowNumber: { $lt: row.rowNumber },
+        })
+      : (await OpportunityWorkbookRow.countDocuments({
+          ...baseFilter,
+          _id: { $in: favoriteObjectIds },
+        })) + (await OpportunityWorkbookRow.countDocuments({
+          ...baseFilter,
+          _id: { $nin: favoriteObjectIds },
+          rowNumber: { $lt: row.rowNumber },
+        }));
+
+    return Math.floor(before / limit) + 1;
+  },
   getLastRow: (workbookId, portalId) =>
     OpportunityWorkbookRow.findOne({ workbook: workbookId, portal: portalId })
       .sort({ rowNumber: -1 })
