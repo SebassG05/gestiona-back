@@ -218,6 +218,12 @@ const opportunityWorkbookRepository = {
       { $inc: { rowCount: amount } },
       { new: true }
     ).lean(),
+  updateWorkbookAfterMerge: ({ workbookId, portalId, headers, rowCount }) =>
+    OpportunityWorkbook.findOneAndUpdate(
+      { _id: workbookId, portal: portalId },
+      { $set: { headers }, $inc: { rowCount } },
+      { new: true }
+    ).lean(),
   searchRows: ({ portalId, term, category = 'opportunities', limit = 50 }) =>
     OpportunityWorkbookRow.aggregate([
       {

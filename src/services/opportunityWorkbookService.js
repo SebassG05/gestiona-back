@@ -331,6 +331,57 @@ const opportunityWorkbookService = {
       namedColumnIndexes.map(({ index }) => normalizeCell(row[index]))
     );
 
+    if (data.targetWorkbookId) {
+      const targetWorkbook = await opportunityWorkbookRepository.findByIdAndPortal(
+        data.targetWorkbookId,
+        portalId
+      );
+      const targetIsContacts = targetWorkbook && (
+        targetWorkbook.category === 'contacts' ||
+        (!targetWorkbook.category && /contact/i.test(`${targetWorkbook.name || ''} ${targetWorkbook.sourceFileName || ''}`))
+      );
+      if (!targetIsContacts) {
+        const error = new Error('El Excel de contactos seleccionado no existe');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      const mergedHeaders = [...(targetWorkbook.headers || [])];
+      const headerIndex = new Map(mergedHeaders.map((header, index) => [normalizeHeader(header), index]));
+      headers.forEach((header) => {
+        const key = normalizeHeader(header);
+        if (!headerIndex.has(key)) {
+          headerIndex.set(key, mergedHeaders.length);
+          mergedHeaders.push(header);
+        }
+      });
+      const nextRowNumber = (await opportunityWorkbookRepository.getLastRow(targetWorkbook._id, portalId))?.rowNumber || targetWorkbook.headerRow || 1;
+      const mergedRows = normalizedRows.map((values) => {
+        const mergedValues = mergedHeaders.map(() => null);
+        headers.forEach((header, index) => {
+          mergedValues[headerIndex.get(normalizeHeader(header))] = values[index];
+        });
+        return mergedValues;
+      });
+      const createdRows = mergedRows.length
+        ? await opportunityWorkbookRepository.createRows(
+            mergedRows.map((values, index) => ({
+              portal: portalId,
+              workbook: targetWorkbook._id,
+              rowNumber: nextRowNumber + index + 1,
+              values,
+            }))
+          )
+        : [];
+      const updatedWorkbook = await opportunityWorkbookRepository.updateWorkbookAfterMerge({
+        workbookId: targetWorkbook._id,
+        portalId,
+        headers: mergedHeaders,
+        rowCount: createdRows.length,
+      });
+      return { ...updatedWorkbook, rowIds: createdRows.map((row) => row._id.toString()) };
+    }
+
     const workbook = await opportunityWorkbookRepository.createWorkbook({
       portal: portalId,
       createdBy: userId,
