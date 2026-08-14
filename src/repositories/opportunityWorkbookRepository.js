@@ -138,7 +138,7 @@ const opportunityWorkbookRepository = {
           favoriteRank: { $cond: [{ $in: ['$_id', favoriteObjectIds] }, 0, 1] },
         },
       },
-      { $sort: { favoriteRank: 1, rowNumber: 1 } },
+      { $sort: { favoriteRank: 1, rowNumber: 1, _id: 1 } },
       { $skip: skip },
       { $limit: limit },
       { $project: { __v: 0, favoriteRank: 0 } },
@@ -169,31 +169,19 @@ const opportunityWorkbookRepository = {
   findRowPage: async ({ workbookId, portalId, rowId, limit, favoriteIds = [] }) => {
     if (!mongoose.Types.ObjectId.isValid(rowId)) return null;
     const baseFilter = { workbook: workbookId, portal: portalId };
-    const row = await OpportunityWorkbookRow.findOne({ ...baseFilter, _id: rowId })
+    const favoriteSet = new Set(favoriteIds.map(String));
+    const orderedRows = await OpportunityWorkbookRow.find(baseFilter)
       .select('_id rowNumber')
       .lean();
-    if (!row) return null;
-
-    const favoriteObjectIds = favoriteIds
-      .filter((id) => mongoose.Types.ObjectId.isValid(id))
-      .map((id) => new mongoose.Types.ObjectId(id));
-    const isFavorite = favoriteObjectIds.some((id) => id.equals(row._id));
-    const before = isFavorite
-      ? await OpportunityWorkbookRow.countDocuments({
-          ...baseFilter,
-          _id: { $in: favoriteObjectIds },
-          rowNumber: { $lt: row.rowNumber },
-        })
-      : (await OpportunityWorkbookRow.countDocuments({
-          ...baseFilter,
-          _id: { $in: favoriteObjectIds },
-        })) + (await OpportunityWorkbookRow.countDocuments({
-          ...baseFilter,
-          _id: { $nin: favoriteObjectIds },
-          rowNumber: { $lt: row.rowNumber },
-        }));
-
-    return Math.floor(before / limit) + 1;
+    orderedRows.sort((first, second) => {
+      const favoriteOrder = Number(favoriteSet.has(String(second._id))) - Number(favoriteSet.has(String(first._id)));
+      if (favoriteOrder) return favoriteOrder;
+      const rowNumberOrder = Number(first.rowNumber || 0) - Number(second.rowNumber || 0);
+      if (rowNumberOrder) return rowNumberOrder;
+      return String(first._id).localeCompare(String(second._id));
+    });
+    const rowIndex = orderedRows.findIndex((row) => String(row._id) === String(rowId));
+    return rowIndex < 0 ? null : Math.floor(rowIndex / limit) + 1;
   },
   getLastRow: (workbookId, portalId) =>
     OpportunityWorkbookRow.findOne({ workbook: workbookId, portal: portalId })
