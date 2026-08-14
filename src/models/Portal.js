@@ -66,6 +66,12 @@ const portalSchema = new mongoose.Schema(
         ref: 'User',
       },
     ],
+    workbookDeleteManagers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
   },
   {
     timestamps: true,
@@ -86,6 +92,9 @@ portalSchema.pre('save', function () {
   if (!this.members.some((member) => member.equals(this.owner))) {
     this.members.unshift(this.owner);
   }
+  this.workbookDeleteManagers = this.workbookDeleteManagers.filter((manager) =>
+    this.members.some((member) => member.equals(manager)) && !manager.equals(this.owner)
+  );
 });
 
 const Portal = mongoose.model('Portal', portalSchema);

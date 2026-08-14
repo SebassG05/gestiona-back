@@ -74,6 +74,7 @@ router.post(
   portalController.inviteMembers
 );
 router.delete('/:portalId/members/:memberId', authenticate, portalController.removeMember);
+router.patch('/:portalId/members/:memberId/page-delete-permission', authenticate, portalController.updateMemberDeletePermission);
 router.post(
   '/:portalId/opportunity-workbooks/promote-to-proposals',
   authenticate,

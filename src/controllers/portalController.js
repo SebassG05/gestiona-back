@@ -92,6 +92,20 @@ const portalController = {
     }
   },
 
+  updateMemberDeletePermission: async (req, res, next) => {
+    try {
+      const result = await portalService.updateMemberDeletePermission({
+        portalId: req.params.portalId,
+        memberId: req.params.memberId,
+        userId: req.user.id,
+        allowed: req.body.allowed,
+      });
+      return res.status(200).json({ success: true, message: 'Permiso actualizado correctamente', data: result });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   getInvitationByCode: async (req, res, next) => {
     try {
       const invitation = await portalService.getInvitationByCode({

@@ -112,13 +112,45 @@ const portalService = {
     }
 
     const ownerId = portal.owner?._id?.toString();
+    const deleteManagerIds = new Set((portal.workbookDeleteManagers || []).map(String));
 
     return portal.members.map((member) => ({
       id: member._id,
       username: member.username,
       email: member.email,
       role: member._id.toString() === ownerId ? 'owner' : 'member',
+      canDeletePages: member._id.toString() === ownerId || deleteManagerIds.has(member._id.toString()),
     }));
+  },
+
+  updateMemberDeletePermission: async ({ portalId, memberId, userId, allowed }) => {
+    const portal = await portalRepository.findById(portalId);
+    if (!portal) {
+      const error = new Error('El portal no existe');
+      error.statusCode = 404;
+      throw error;
+    }
+    if (!portal.owner.equals(userId)) {
+      const error = new Error('Solo el propietario puede gestionar este permiso');
+      error.statusCode = 403;
+      throw error;
+    }
+    if (!portal.members.some((member) => member.equals(memberId))) {
+      const error = new Error('El miembro no pertenece a este portal');
+      error.statusCode = 404;
+      throw error;
+    }
+    if (portal.owner.equals(memberId)) {
+      const error = new Error('El propietario siempre puede eliminar paginas');
+      error.statusCode = 409;
+      throw error;
+    }
+    const managerIds = new Set((portal.workbookDeleteManagers || []).map(String));
+    if (allowed) managerIds.add(String(memberId));
+    else managerIds.delete(String(memberId));
+    portal.workbookDeleteManagers = [...managerIds];
+    await portal.save();
+    return { memberId, canDeletePages: Boolean(allowed) };
   },
 
   inviteMembers: async ({ portalId, userId, invites = [] }) => {
@@ -236,6 +268,9 @@ const portalService = {
     portal.members = portal.members
       .filter((item) => !item._id.equals(memberId))
       .map((item) => item._id);
+    portal.workbookDeleteManagers = (portal.workbookDeleteManagers || []).filter(
+      (item) => !item.equals(memberId)
+    );
 
     portal.invites = portal.invites.map((invite) => {
       if (invite.email === member.email) {

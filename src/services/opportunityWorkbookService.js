@@ -19,6 +19,7 @@ const assertPortalAccess = async ({ portalId, userId }) => {
     error.statusCode = 403;
     throw error;
   }
+  return portal;
 };
 
 const normalizeCell = (value) => {
@@ -419,7 +420,13 @@ const opportunityWorkbookService = {
   },
 
   remove: async ({ portalId, workbookId, userId }) => {
-    await assertPortalAccess({ portalId, userId });
+    const portal = await assertPortalAccess({ portalId, userId });
+    const canDelete = portal.owner.equals(userId) || (portal.workbookDeleteManagers || []).some((member) => member.equals(userId));
+    if (!canDelete) {
+      const error = new Error('No tienes permiso para eliminar paginas de este portal');
+      error.statusCode = 403;
+      throw error;
+    }
     const workbook = await opportunityWorkbookRepository.findByIdAndPortal(
       workbookId,
       portalId
