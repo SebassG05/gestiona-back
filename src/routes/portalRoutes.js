@@ -2,6 +2,7 @@ import { Router } from 'express';
 import portalController from '../controllers/portalController.js';
 import portalExcelController from '../controllers/portalExcelController.js';
 import opportunityWorkbookController from '../controllers/opportunityWorkbookController.js';
+import opportunityConceptNoteController from '../controllers/opportunityConceptNoteController.js';
 import proposalContactController from '../controllers/proposalContactController.js';
 import proposalController from '../controllers/proposalController.js';
 import proposalControlController from '../controllers/proposalControlController.js';
@@ -80,6 +81,11 @@ router.post(
   authenticate,
   opportunityWorkbookController.promoteToProposals
 );
+router.get('/:portalId/opportunity-workbooks/:workbookId/rows/:rowId/concept-note', authenticate, opportunityConceptNoteController.get);
+router.put('/:portalId/opportunity-workbooks/:workbookId/rows/:rowId/concept-note', authenticate, opportunityConceptNoteController.save);
+router.get('/:portalId/opportunity-workbooks/:workbookId/rows/:rowId/concept-note/download', authenticate, opportunityConceptNoteController.download);
+router.get('/:portalId/opportunity-workbooks/:workbookId/rows/:rowId/concept-note/versions/:versionId/download', authenticate, opportunityConceptNoteController.downloadVersion);
+router.delete('/:portalId/opportunity-workbooks/:workbookId/rows/:rowId/concept-note', authenticate, opportunityConceptNoteController.remove);
 router.get(
   '/:portalId/opportunity-workbooks',
   authenticate,
