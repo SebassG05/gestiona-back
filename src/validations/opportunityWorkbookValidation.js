@@ -48,3 +48,42 @@ export const linkedOpportunityContactsValidation = [
     .isMongoId()
     .withMessage('Una de las filas de oportunidad no es valida'),
 ];
+
+export const updateOpportunityContactTrackingValidation = [
+  body('tracking').isObject().withMessage('El seguimiento no es valido'),
+  body('tracking.emailSent').isBoolean().withMessage('El estado del correo no es valido'),
+  body('tracking.responseReceived')
+    .isBoolean()
+    .withMessage('El estado de la respuesta no es valido'),
+  body('tracking.responseNote')
+    .optional({ values: 'falsy' })
+    .isString()
+    .trim()
+    .isLength({ max: 4000 })
+    .withMessage('La nota de respuesta no puede superar los 4000 caracteres'),
+  body('tracking.meetingScheduled')
+    .isBoolean()
+    .withMessage('El estado de la reunion no es valido'),
+  body('tracking.meetingAt')
+    .optional({ values: 'falsy' })
+    .isISO8601()
+    .withMessage('La fecha de la reunion no es valida'),
+  body('tracking.meetingTitle')
+    .optional({ values: 'falsy' })
+    .isString()
+    .trim()
+    .isLength({ max: 140 })
+    .withMessage('El titulo de la reunion no puede superar los 140 caracteres'),
+  body('tracking.meetingNote')
+    .optional({ values: 'falsy' })
+    .isString()
+    .trim()
+    .isLength({ max: 1200 })
+    .withMessage('La nota de la reunion no puede superar los 1200 caracteres'),
+  body('tracking').custom((tracking) => {
+    if (tracking?.meetingScheduled && !tracking?.meetingAt) {
+      throw new Error('Indica la fecha y hora de la reunion');
+    }
+    return true;
+  }),
+];

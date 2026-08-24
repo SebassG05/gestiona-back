@@ -54,6 +54,43 @@ const opportunityContactLinkRepository = {
       opportunityWorkbook: workbookId,
     }).lean(),
 
+  findById: ({ portalId, workbookId, linkId }) =>
+    OpportunityContactLink.findOne({
+      _id: linkId,
+      portal: portalId,
+      opportunityWorkbook: workbookId,
+    }).lean(),
+
+  updateTracking: ({ portalId, workbookId, linkId, contactTracking, userId }) =>
+    OpportunityContactLink.findOneAndUpdate(
+      {
+        _id: linkId,
+        portal: portalId,
+        opportunityWorkbook: workbookId,
+      },
+      {
+        $set: {
+          contactTracking,
+          trackingUpdatedBy: userId,
+        },
+      },
+      { new: true, runValidators: true }
+    ).lean(),
+
+  findMeetingActivityIdsByWorkbook: ({ workbookId, portalId }) =>
+    OpportunityContactLink.distinct('contactTracking.meetingActivity', {
+      portal: portalId,
+      $or: [{ opportunityWorkbook: workbookId }, { contactWorkbook: workbookId }],
+      'contactTracking.meetingActivity': { $ne: null },
+    }),
+
+  findMeetingActivityIdsByRow: ({ rowId, portalId }) =>
+    OpportunityContactLink.distinct('contactTracking.meetingActivity', {
+      portal: portalId,
+      $or: [{ opportunityRow: rowId }, { contactRow: rowId }],
+      'contactTracking.meetingActivity': { $ne: null },
+    }),
+
   deleteByWorkbook: (workbookId, portalId) =>
     OpportunityContactLink.deleteMany({
       portal: portalId,

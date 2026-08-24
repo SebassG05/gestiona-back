@@ -1,5 +1,58 @@
 import mongoose from 'mongoose';
 
+const contactTrackingSchema = new mongoose.Schema(
+  {
+    emailSent: {
+      type: Boolean,
+      default: false,
+    },
+    emailSentAt: {
+      type: Date,
+      default: null,
+    },
+    responseReceived: {
+      type: Boolean,
+      default: false,
+    },
+    responseReceivedAt: {
+      type: Date,
+      default: null,
+    },
+    responseNote: {
+      type: String,
+      trim: true,
+      maxlength: 4000,
+      default: '',
+    },
+    meetingScheduled: {
+      type: Boolean,
+      default: false,
+    },
+    meetingAt: {
+      type: Date,
+      default: null,
+    },
+    meetingTitle: {
+      type: String,
+      trim: true,
+      maxlength: 140,
+      default: '',
+    },
+    meetingNote: {
+      type: String,
+      trim: true,
+      maxlength: 1200,
+      default: '',
+    },
+    meetingActivity: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'TeamActivity',
+      default: null,
+    },
+  },
+  { _id: false }
+);
+
 const opportunityContactLinkSchema = new mongoose.Schema(
   {
     portal: {
@@ -43,6 +96,15 @@ const opportunityContactLinkSchema = new mongoose.Schema(
     },
     contactSnapshot: {
       type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    contactTracking: {
+      type: contactTrackingSchema,
+      default: () => ({}),
+    },
+    trackingUpdatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
       default: null,
     },
   },

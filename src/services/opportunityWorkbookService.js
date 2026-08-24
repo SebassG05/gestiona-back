@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import opportunityWorkbookRepository from '../repositories/opportunityWorkbookRepository.js';
 import opportunityContactLinkRepository from '../repositories/opportunityContactLinkRepository.js';
+import teamActivityRepository from '../repositories/teamActivityRepository.js';
 import portalRepository from '../repositories/portalRepository.js';
 import proposalRepository from '../repositories/proposalRepository.js';
 import PortalFavorite from '../models/PortalFavorite.js';
@@ -144,6 +145,35 @@ const buildRowSnapshot = (row) => ({
   headers: row.workbook?.headers || [],
   values: row.values || [],
 });
+
+const getSnapshotValue = (snapshot, names) => {
+  const normalizedNames = names.map(normalizeHeader);
+  const index = (snapshot?.headers || []).findIndex((header) =>
+    normalizedNames.includes(normalizeHeader(header))
+  );
+  const value = index >= 0 ? snapshot?.values?.[index] : '';
+  return value === null || value === undefined ? '' : String(value).trim();
+};
+
+const mapContactTracking = (link) => {
+  const tracking = link?.contactTracking || {};
+  return {
+    emailSent: Boolean(tracking.emailSent),
+    emailSentAt: tracking.emailSentAt || null,
+    responseReceived: Boolean(tracking.responseReceived),
+    responseReceivedAt: tracking.responseReceivedAt || null,
+    responseNote: tracking.responseNote || '',
+    meetingScheduled: Boolean(tracking.meetingScheduled),
+    meetingAt: tracking.meetingAt || null,
+    meetingTitle: tracking.meetingTitle || '',
+    meetingNote: tracking.meetingNote || '',
+    meetingActivityId: tracking.meetingActivity?.toString?.() || null,
+  };
+};
+
+const removeMeetingActivities = async (activityIds) => {
+  if (activityIds?.length) await teamActivityRepository.deleteManyByIds(activityIds);
+};
 
 const buildPagination = ({ page, limit, total }) => {
   const safeLimit = Math.min(Math.max(Number(limit) || 80, 1), 200);
@@ -438,9 +468,15 @@ const opportunityWorkbookService = {
       throw error;
     }
 
+    const meetingActivityIds =
+      await opportunityContactLinkRepository.findMeetingActivityIdsByWorkbook({
+        workbookId,
+        portalId,
+      });
     await opportunityWorkbookRepository.deleteRows(workbookId, portalId);
     await opportunityWorkbookRepository.deleteWorkbook(workbookId, portalId);
     await opportunityContactLinkRepository.deleteByWorkbook(workbookId, portalId);
+    await removeMeetingActivities(meetingActivityIds);
 
     return { id: workbook._id.toString(), name: workbook.name };
   },
@@ -518,12 +554,15 @@ const opportunityWorkbookService = {
       throw error;
     }
 
+    const meetingActivityIds =
+      await opportunityContactLinkRepository.findMeetingActivityIdsByRow({ rowId, portalId });
     await opportunityWorkbookRepository.incrementWorkbookRowCount({
       workbookId,
       portalId,
       amount: -1,
     });
     await opportunityContactLinkRepository.deleteByRow(rowId, portalId);
+    await removeMeetingActivities(meetingActivityIds);
 
     return { id: row._id.toString() };
   },
@@ -654,6 +693,8 @@ const opportunityWorkbookService = {
         id: link._id.toString(),
         opportunityRowId: link.opportunityRow?.toString(),
         createdAt: link.createdAt,
+        tracking: mapContactTracking(link),
+        trackingUpdatedAt: link.updatedAt,
         contact: {
           rowId: row._id?.toString() || link.contactRow?.toString() || null,
           workbookId: workbook._id?.toString() || link.contactWorkbook?.toString() || null,
@@ -666,6 +707,101 @@ const opportunityWorkbookService = {
         },
       };
     });
+  },
+
+  updateLinkedContactTracking: async ({
+    portalId,
+    workbookId,
+    linkId,
+    userId,
+    tracking,
+  }) => {
+    await assertPortalAccess({ portalId, userId });
+
+    const link = await opportunityContactLinkRepository.findById({
+      portalId,
+      workbookId,
+      linkId,
+    });
+    if (!link) {
+      const error = new Error('El contacto vinculado no existe');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const previousTracking = link.contactTracking || {};
+    const now = new Date();
+    const emailSent = Boolean(tracking.emailSent);
+    const responseReceived = Boolean(tracking.responseReceived);
+    const meetingScheduled = Boolean(tracking.meetingScheduled);
+    const meetingAt = meetingScheduled ? new Date(tracking.meetingAt) : null;
+    const contactName =
+      getSnapshotValue(link.contactSnapshot, ['nombre y apellidos', 'nombre', 'name']) ||
+      'el contacto';
+    const defaultMeetingTitle = `Reunion con ${contactName}`.slice(0, 140);
+    const meetingTitle = meetingScheduled
+      ? String(tracking.meetingTitle || defaultMeetingTitle).trim().slice(0, 140)
+      : '';
+    const meetingNote = meetingScheduled
+      ? String(tracking.meetingNote || '').trim().slice(0, 1200)
+      : '';
+    let meetingActivityId = previousTracking.meetingActivity || null;
+
+    if (meetingScheduled) {
+      const calendarData = {
+        title: meetingTitle,
+        description: meetingNote,
+        workDate: meetingAt,
+        endDate: meetingAt,
+        status: 'planned',
+        priority: 'medium',
+      };
+
+      let calendarActivity = meetingActivityId
+        ? await teamActivityRepository.updateById(meetingActivityId, calendarData)
+        : null;
+      if (!calendarActivity) {
+        calendarActivity = await teamActivityRepository.create({
+          portal: portalId,
+          author: userId,
+          assignedTo: userId,
+          ...calendarData,
+        });
+      }
+      meetingActivityId = calendarActivity._id;
+    } else if (meetingActivityId) {
+      await teamActivityRepository.deleteById(meetingActivityId);
+      meetingActivityId = null;
+    }
+
+    const normalizedTracking = {
+      emailSent,
+      emailSentAt: emailSent ? previousTracking.emailSentAt || now : null,
+      responseReceived,
+      responseReceivedAt: responseReceived
+        ? previousTracking.responseReceivedAt || now
+        : null,
+      responseNote: responseReceived ? String(tracking.responseNote || '').trim() : '',
+      meetingScheduled,
+      meetingAt,
+      meetingTitle,
+      meetingNote,
+      meetingActivity: meetingActivityId,
+    };
+
+    const updatedLink = await opportunityContactLinkRepository.updateTracking({
+      portalId,
+      workbookId,
+      linkId,
+      contactTracking: normalizedTracking,
+      userId,
+    });
+
+    return {
+      id: updatedLink._id.toString(),
+      tracking: mapContactTracking(updatedLink),
+      trackingUpdatedAt: updatedLink.updatedAt,
+    };
   },
 
   unlinkContactFromOpportunity: async ({ portalId, workbookId, linkId, userId }) => {
@@ -681,6 +817,10 @@ const opportunityWorkbookService = {
       const error = new Error('El contacto vinculado no existe');
       error.statusCode = 404;
       throw error;
+    }
+
+    if (deletedLink.contactTracking?.meetingActivity) {
+      await teamActivityRepository.deleteById(deletedLink.contactTracking.meetingActivity);
     }
 
     return { id: deletedLink._id.toString() };

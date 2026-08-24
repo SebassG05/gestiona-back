@@ -189,6 +189,25 @@ const opportunityWorkbookController = {
     }
   },
 
+  updateLinkedContactTracking: async (req, res, next) => {
+    try {
+      const data = await opportunityWorkbookService.updateLinkedContactTracking({
+        portalId: req.params.portalId,
+        workbookId: req.params.workbookId,
+        linkId: req.params.linkId,
+        userId: req.user.id,
+        tracking: req.body.tracking,
+      });
+      return res.json({
+        success: true,
+        message: 'Seguimiento del contacto actualizado correctamente',
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   unlinkContactFromOpportunity: async (req, res, next) => {
     try {
       const data = await opportunityWorkbookService.unlinkContactFromOpportunity({

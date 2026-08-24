@@ -38,6 +38,9 @@ const teamActivityRepository = {
     ),
 
   deleteById: (id) => TeamActivity.findByIdAndDelete(id),
+
+  deleteManyByIds: (ids) =>
+    ids?.length ? TeamActivity.deleteMany({ _id: { $in: ids } }) : Promise.resolve({ deletedCount: 0 }),
 };
 
 export default teamActivityRepository;

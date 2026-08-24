@@ -18,6 +18,7 @@ import {
   importOpportunityWorkbookValidation,
   linkedOpportunityContactsValidation,
   linkOpportunityContactsValidation,
+  updateOpportunityContactTrackingValidation,
 } from '../validations/opportunityWorkbookValidation.js';
 import { createPortalValidation, invitePortalMembersValidation } from '../validations/portalValidation.js';
 import {
@@ -131,6 +132,13 @@ router.post(
   linkedOpportunityContactsValidation,
   validateRequest,
   opportunityWorkbookController.listLinkedContacts
+);
+router.patch(
+  '/:portalId/opportunity-workbooks/:workbookId/contacts/linked/:linkId/tracking',
+  authenticate,
+  updateOpportunityContactTrackingValidation,
+  validateRequest,
+  opportunityWorkbookController.updateLinkedContactTracking
 );
 router.delete(
   '/:portalId/opportunity-workbooks/:workbookId/contacts/linked/:linkId',
