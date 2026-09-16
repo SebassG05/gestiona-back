@@ -540,6 +540,35 @@ const opportunityWorkbookService = {
     return row;
   },
 
+  updateOpportunityNote: async ({ portalId, workbookId, rowId, userId, note }) => {
+    await assertPortalAccess({ portalId, userId });
+    const workbook = await opportunityWorkbookRepository.findByIdAndPortal(
+      workbookId,
+      portalId
+    );
+
+    if (!workbook || normalizeCategory(workbook.category) !== 'opportunities') {
+      const error = new Error('La oportunidad no existe');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const row = await opportunityWorkbookRepository.updateOpportunityNote({
+      rowId,
+      workbookId,
+      portalId,
+      opportunityNote: String(note || '').trim().slice(0, 5000),
+    });
+
+    if (!row) {
+      const error = new Error('La oportunidad no existe');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    return row;
+  },
+
   removeRow: async ({ portalId, workbookId, rowId, userId }) => {
     await assertPortalAccess({ portalId, userId });
     const row = await opportunityWorkbookRepository.deleteRow({

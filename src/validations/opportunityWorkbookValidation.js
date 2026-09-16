@@ -87,3 +87,12 @@ export const updateOpportunityContactTrackingValidation = [
     return true;
   }),
 ];
+
+export const updateOpportunityNoteValidation = [
+  body('note')
+    .optional({ values: 'falsy' })
+    .isString()
+    .trim()
+    .isLength({ max: 5000 })
+    .withMessage('La nota no puede superar los 5000 caracteres'),
+];

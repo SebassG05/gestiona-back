@@ -194,6 +194,12 @@ const opportunityWorkbookRepository = {
       { values },
       { new: true }
     ).lean(),
+  updateOpportunityNote: ({ rowId, workbookId, portalId, opportunityNote }) =>
+    OpportunityWorkbookRow.findOneAndUpdate(
+      { _id: rowId, workbook: workbookId, portal: portalId },
+      { opportunityNote },
+      { new: true }
+    ).lean(),
   deleteRow: ({ rowId, workbookId, portalId }) =>
     OpportunityWorkbookRow.findOneAndDelete({
       _id: rowId,
@@ -248,7 +254,14 @@ const opportunityWorkbookRepository = {
           },
         },
       },
-      { $match: { matchesSearch: true } },
+      {
+        $match: {
+          $or: [
+            { matchesSearch: true },
+            { opportunityNote: { $regex: term, $options: 'i' } },
+          ],
+        },
+      },
       { $sort: { rowNumber: 1 } },
       { $limit: limit },
       {
@@ -256,6 +269,7 @@ const opportunityWorkbookRepository = {
           _id: 1,
           rowNumber: 1,
           values: 1,
+          opportunityNote: 1,
           workbook: {
             _id: '$workbook._id',
             name: '$workbook.name',
@@ -291,6 +305,7 @@ const opportunityWorkbookRepository = {
           portal: 1,
           rowNumber: 1,
           values: 1,
+          opportunityNote: 1,
           workbook: {
             _id: '$workbook._id',
             name: '$workbook.name',

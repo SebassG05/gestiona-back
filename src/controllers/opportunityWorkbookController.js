@@ -135,6 +135,25 @@ const opportunityWorkbookController = {
     }
   },
 
+  updateOpportunityNote: async (req, res, next) => {
+    try {
+      const data = await opportunityWorkbookService.updateOpportunityNote({
+        portalId: req.params.portalId,
+        workbookId: req.params.workbookId,
+        rowId: req.params.rowId,
+        userId: req.user.id,
+        note: req.body.note,
+      });
+      return res.json({
+        success: true,
+        message: 'Nota actualizada correctamente',
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   removeRow: async (req, res, next) => {
     try {
       const data = await opportunityWorkbookService.removeRow({

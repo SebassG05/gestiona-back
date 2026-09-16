@@ -19,6 +19,7 @@ import {
   linkedOpportunityContactsValidation,
   linkOpportunityContactsValidation,
   updateOpportunityContactTrackingValidation,
+  updateOpportunityNoteValidation,
 } from '../validations/opportunityWorkbookValidation.js';
 import { createPortalValidation, invitePortalMembersValidation } from '../validations/portalValidation.js';
 import {
@@ -118,6 +119,13 @@ router.patch(
   '/:portalId/opportunity-workbooks/:workbookId/rows/:rowId',
   authenticate,
   opportunityWorkbookController.updateRow
+);
+router.patch(
+  '/:portalId/opportunity-workbooks/:workbookId/rows/:rowId/note',
+  authenticate,
+  updateOpportunityNoteValidation,
+  validateRequest,
+  opportunityWorkbookController.updateOpportunityNote
 );
 router.post(
   '/:portalId/opportunity-workbooks/:workbookId/rows/:rowId/contacts/link',

@@ -23,6 +23,12 @@ const opportunityWorkbookRowSchema = new mongoose.Schema(
       type: [mongoose.Schema.Types.Mixed],
       required: true,
     },
+    opportunityNote: {
+      type: String,
+      default: '',
+      trim: true,
+      maxlength: 5000,
+    },
   },
   { timestamps: true }
 );
