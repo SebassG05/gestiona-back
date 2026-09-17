@@ -18,6 +18,7 @@ import {
   importOpportunityWorkbookValidation,
   linkedOpportunityContactsValidation,
   linkOpportunityContactsValidation,
+  reorderOpportunityWorkbooksValidation,
   updateOpportunityContactTrackingValidation,
   updateOpportunityNoteValidation,
 } from '../validations/opportunityWorkbookValidation.js';
@@ -97,6 +98,13 @@ router.get(
   '/:portalId/opportunity-workbooks/search',
   authenticate,
   opportunityWorkbookController.search
+);
+router.patch(
+  '/:portalId/opportunity-workbooks/reorder',
+  authenticate,
+  reorderOpportunityWorkbooksValidation,
+  validateRequest,
+  opportunityWorkbookController.reorder
 );
 router.get(
   '/:portalId/opportunity-workbooks/:workbookId',

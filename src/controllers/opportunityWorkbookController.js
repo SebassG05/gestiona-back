@@ -33,6 +33,20 @@ const opportunityWorkbookController = {
     }
   },
 
+  reorder: async (req, res, next) => {
+    try {
+      const data = await opportunityWorkbookService.reorder({
+        portalId: req.params.portalId,
+        userId: req.user.id,
+        category: req.body.category,
+        workbookIds: req.body.workbookIds,
+      });
+      return res.json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   getById: async (req, res, next) => {
     try {
       const data = await opportunityWorkbookService.getById({

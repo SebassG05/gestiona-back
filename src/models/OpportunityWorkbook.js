@@ -55,12 +55,18 @@ const opportunityWorkbookSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
+    sortOrder: {
+      type: Number,
+      default: 0,
+      index: true,
+    },
   },
   { timestamps: true }
 );
 
 opportunityWorkbookSchema.index({ portal: 1, createdAt: -1 });
 opportunityWorkbookSchema.index({ portal: 1, category: 1, createdAt: -1 });
+opportunityWorkbookSchema.index({ portal: 1, category: 1, sortOrder: 1 });
 
 const OpportunityWorkbook = mongoose.model(
   'OpportunityWorkbook',

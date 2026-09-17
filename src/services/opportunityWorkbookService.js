@@ -268,6 +268,33 @@ const opportunityWorkbookService = {
     return opportunityWorkbookRepository.listByPortal(portalId, normalizeCategory(category));
   },
 
+  reorder: async ({ portalId, userId, category, workbookIds }) => {
+    await assertPortalAccess({ portalId, userId });
+    const uniqueWorkbookIds = [...new Set((Array.isArray(workbookIds) ? workbookIds : []).map(String))];
+
+    if (!uniqueWorkbookIds.length || uniqueWorkbookIds.some((id) => !mongoose.Types.ObjectId.isValid(id))) {
+      const error = new Error('El orden de los Excel no es valido');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const workbooks = await opportunityWorkbookRepository.listByPortal(portalId, normalizeCategory(category));
+    const validIds = new Set(workbooks.map((workbook) => workbook._id.toString()));
+    if (uniqueWorkbookIds.some((workbookId) => !validIds.has(workbookId))) {
+      const error = new Error('Alguna pagina de Excel no existe en este portal');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const remainingIds = workbooks
+      .map((workbook) => workbook._id.toString())
+      .filter((workbookId) => !uniqueWorkbookIds.includes(workbookId));
+    const orderedIds = [...uniqueWorkbookIds, ...remainingIds];
+
+    await opportunityWorkbookRepository.reorderWorkbooks({ portalId, workbookIds: orderedIds });
+    return opportunityWorkbookRepository.listByPortal(portalId, normalizeCategory(category));
+  },
+
   search: async ({ portalId, userId, query, category }) => {
     await assertPortalAccess({ portalId, userId });
 

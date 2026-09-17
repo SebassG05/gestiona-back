@@ -102,9 +102,18 @@ const opportunityWorkbookRepository = {
   createRows: (rows) => OpportunityWorkbookRow.insertMany(rows, { ordered: true }),
   listByPortal: (portalId, category = 'opportunities') =>
     OpportunityWorkbook.find({ portal: portalId, ...categoryWorkbookFilter(category) })
-      .sort({ createdAt: 1 })
+      .sort({ sortOrder: 1, createdAt: 1 })
       .select('-__v')
       .lean(),
+  reorderWorkbooks: ({ portalId, workbookIds }) =>
+    OpportunityWorkbook.bulkWrite(
+      workbookIds.map((workbookId, index) => ({
+        updateOne: {
+          filter: { _id: workbookId, portal: portalId },
+          update: { $set: { sortOrder: index } },
+        },
+      }))
+    ),
   findByIdAndPortal: (workbookId, portalId) =>
     OpportunityWorkbook.findOne({ _id: workbookId, portal: portalId }).lean(),
   listRows: (workbookId, portalId) =>

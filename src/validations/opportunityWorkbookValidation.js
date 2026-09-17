@@ -96,3 +96,16 @@ export const updateOpportunityNoteValidation = [
     .isLength({ max: 5000 })
     .withMessage('La nota no puede superar los 5000 caracteres'),
 ];
+
+export const reorderOpportunityWorkbooksValidation = [
+  body('category')
+    .optional()
+    .isIn(['opportunities', 'contacts'])
+    .withMessage('La categoria del Excel no es valida'),
+  body('workbookIds')
+    .isArray({ min: 1, max: 100 })
+    .withMessage('Debes indicar el orden de los Excel'),
+  body('workbookIds.*')
+    .isMongoId()
+    .withMessage('Uno de los Excel no es valido'),
+];
