@@ -280,16 +280,12 @@ const opportunityWorkbookService = {
 
     const workbooks = await opportunityWorkbookRepository.listByPortal(portalId, normalizeCategory(category));
     const validIds = new Set(workbooks.map((workbook) => workbook._id.toString()));
-    if (uniqueWorkbookIds.some((workbookId) => !validIds.has(workbookId))) {
-      const error = new Error('Alguna pagina de Excel no existe en este portal');
-      error.statusCode = 404;
-      throw error;
-    }
+    const requestedIds = uniqueWorkbookIds.filter((workbookId) => validIds.has(workbookId));
 
     const remainingIds = workbooks
       .map((workbook) => workbook._id.toString())
-      .filter((workbookId) => !uniqueWorkbookIds.includes(workbookId));
-    const orderedIds = [...uniqueWorkbookIds, ...remainingIds];
+      .filter((workbookId) => !requestedIds.includes(workbookId));
+    const orderedIds = [...requestedIds, ...remainingIds];
 
     await opportunityWorkbookRepository.reorderWorkbooks({ portalId, workbookIds: orderedIds });
     return opportunityWorkbookRepository.listByPortal(portalId, normalizeCategory(category));
