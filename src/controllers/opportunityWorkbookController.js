@@ -42,6 +42,7 @@ const opportunityWorkbookController = {
         page: req.query.page,
         limit: req.query.limit,
         filters: req.query.filters,
+        search: req.query.search,
         focusRowId: req.query.focusRowId,
       });
       return res.json({ success: true, data });

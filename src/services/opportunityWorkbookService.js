@@ -131,6 +131,35 @@ const buildMongoRowFilters = ({ headers, rawFilters }) => {
   return conditions.length ? { $and: conditions } : {};
 };
 
+const buildMongoRowSearch = (rawSearch) => {
+  const search = String(rawSearch || '').trim();
+  if (search.length < 2) return {};
+
+  const regex = escapeRegex(search);
+  return {
+    $or: [
+      {
+        $expr: {
+          $anyElementTrue: {
+            $map: {
+              input: '$values',
+              as: 'cell',
+              in: {
+                $regexMatch: {
+                  input: { $toString: { $ifNull: ['$$cell', ''] } },
+                  regex,
+                  options: 'i',
+                },
+              },
+            },
+          },
+        },
+      },
+      { opportunityNote: { $regex: regex, $options: 'i' } },
+    ],
+  };
+};
+
 const normalizeRowValues = ({ values, headers }) => {
   const nextValues = Array.isArray(values) ? values : [];
   return headers.map((_, index) => normalizeCell(nextValues[index]));
@@ -255,7 +284,7 @@ const opportunityWorkbookService = {
     });
   },
 
-  getById: async ({ portalId, workbookId, userId, page, limit, filters, focusRowId }) => {
+  getById: async ({ portalId, workbookId, userId, page, limit, filters, search, focusRowId }) => {
     const [, workbook] = await Promise.all([
       assertPortalAccess({ portalId, userId }),
       opportunityWorkbookRepository.findByIdAndPortal(workbookId, portalId),
@@ -271,7 +300,13 @@ const opportunityWorkbookService = {
       headers: workbook.headers || [],
       rawFilters: filters,
     });
-    const hasFilters = Object.keys(mongoFilters).length > 0;
+    const mongoSearch = buildMongoRowSearch(search);
+    const mongoQuery = Object.keys(mongoSearch).length
+      ? Object.keys(mongoFilters).length
+        ? { $and: [mongoFilters, mongoSearch] }
+        : mongoSearch
+      : mongoFilters;
+    const hasFilters = Object.keys(mongoQuery).length > 0;
     const favoriteIds = hasFilters || (workbook.category || 'opportunities') === 'contacts'
       ? []
       : await PortalFavorite.find({
@@ -293,7 +328,7 @@ const opportunityWorkbookService = {
       ? opportunityWorkbookRepository.listRowsFilteredPaginated({
           workbookId,
           portalId,
-          filters: mongoFilters,
+          filters: mongoQuery,
           skip: (requestedPage - 1) * requestedLimit,
           limit: requestedLimit,
         })
@@ -305,7 +340,7 @@ const opportunityWorkbookService = {
           favoriteIds,
         });
     const totalPromise = hasFilters
-      ? opportunityWorkbookRepository.countRowsFiltered({ workbookId, portalId, filters: mongoFilters })
+      ? opportunityWorkbookRepository.countRowsFiltered({ workbookId, portalId, filters: mongoQuery })
       : workbook.rowCount == null
         ? opportunityWorkbookRepository.countRows(workbookId, portalId)
         : Promise.resolve(workbook.rowCount);
@@ -317,7 +352,7 @@ const opportunityWorkbookService = {
         ? await opportunityWorkbookRepository.listRowsFilteredPaginated({
             workbookId,
             portalId,
-            filters: mongoFilters,
+            filters: mongoQuery,
             skip: (pagination.page - 1) * pagination.limit,
             limit: pagination.limit,
           })
