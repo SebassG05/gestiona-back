@@ -61,6 +61,10 @@ export const updateOpportunityContactTrackingValidation = [
     .trim()
     .isLength({ max: 4000 })
     .withMessage('La nota de respuesta no puede superar los 4000 caracteres'),
+  body('tracking.interestStatus')
+    .optional({ values: 'falsy' })
+    .isIn(['interested', 'not_interested'])
+    .withMessage('El estado de interes no es valido'),
   body('tracking.meetingScheduled')
     .isBoolean()
     .withMessage('El estado de la reunion no es valido'),

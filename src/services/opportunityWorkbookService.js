@@ -192,6 +192,7 @@ const mapContactTracking = (link) => {
     responseReceived: Boolean(tracking.responseReceived),
     responseReceivedAt: tracking.responseReceivedAt || null,
     responseNote: tracking.responseNote || '',
+    interestStatus: tracking.interestStatus || '',
     meetingScheduled: Boolean(tracking.meetingScheduled),
     meetingAt: tracking.meetingAt || null,
     meetingTitle: tracking.meetingTitle || '',
@@ -820,6 +821,9 @@ const opportunityWorkbookService = {
     const now = new Date();
     const emailSent = Boolean(tracking.emailSent);
     const responseReceived = Boolean(tracking.responseReceived);
+    const interestStatus = ['interested', 'not_interested'].includes(tracking.interestStatus)
+      ? tracking.interestStatus
+      : '';
     const meetingScheduled = Boolean(tracking.meetingScheduled);
     const meetingAt = meetingScheduled ? new Date(tracking.meetingAt) : null;
     const contactName =
@@ -869,6 +873,7 @@ const opportunityWorkbookService = {
         ? previousTracking.responseReceivedAt || now
         : null,
       responseNote: responseReceived ? String(tracking.responseNote || '').trim() : '',
+      interestStatus,
       meetingScheduled,
       meetingAt,
       meetingTitle,

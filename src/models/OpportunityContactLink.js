@@ -24,6 +24,11 @@ const contactTrackingSchema = new mongoose.Schema(
       maxlength: 4000,
       default: '',
     },
+    interestStatus: {
+      type: String,
+      enum: ['', 'interested', 'not_interested'],
+      default: '',
+    },
     meetingScheduled: {
       type: Boolean,
       default: false,
