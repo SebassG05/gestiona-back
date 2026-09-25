@@ -6,6 +6,14 @@ export const NODE_ENV = process.env.NODE_ENV || 'development';
 export const JWT_SECRET = process.env.JWT_SECRET;
 export const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 export const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+export const GOOGLE_CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || '';
+export const GOOGLE_CALENDAR_PORTAL_ID = process.env.GOOGLE_CALENDAR_PORTAL_ID || '';
+export const GOOGLE_CALENDAR_CLIENT_EMAIL = process.env.GOOGLE_CALENDAR_CLIENT_EMAIL || '';
+export const GOOGLE_CALENDAR_PRIVATE_KEY = (process.env.GOOGLE_CALENDAR_PRIVATE_KEY || '').replace(
+  /\\n/g,
+  '\n'
+);
+export const GOOGLE_CALENDAR_TIME_ZONE = process.env.GOOGLE_CALENDAR_TIME_ZONE || 'Europe/Madrid';
 export const SMTP_HOST = process.env.SMTP_HOST;
 export const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
 export const SMTP_SECURE = process.env.SMTP_SECURE === 'true';

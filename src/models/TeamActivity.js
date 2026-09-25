@@ -76,6 +76,12 @@ const teamActivitySchema = new mongoose.Schema(
       default: '#ff5a1f',
       match: [/^#[0-9A-Fa-f]{6}$/, 'El color no es valido'],
     },
+    googleEventId: {
+      type: String,
+      trim: true,
+      default: '',
+      index: true,
+    },
     comments: {
       type: [teamActivityCommentSchema],
       default: [],

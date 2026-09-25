@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import portalRepository from '../repositories/portalRepository.js';
 import teamActivityRepository from '../repositories/teamActivityRepository.js';
+import googleCalendarService from './googleCalendarService.js';
 
 const toObjectId = (value) => value?.toString?.() || String(value);
 const getEntityId = (value) => value?._id || value?.id || value;
@@ -93,6 +94,21 @@ const mapActivity = (activity) => ({
   createdAt: activity.createdAt,
   updatedAt: activity.updatedAt,
 });
+
+const syncActivityToGoogle = async (activity) => {
+  try {
+    const googleEventId = await googleCalendarService.syncActivity(activity);
+    if (!googleEventId || googleEventId === activity.googleEventId) return activity;
+
+    return teamActivityRepository.updateById(activity._id, { googleEventId });
+  } catch (error) {
+    console.error('[google-calendar] No se pudo sincronizar la actividad', {
+      activityId: activity?._id?.toString?.(),
+      message: error.message,
+    });
+    return activity;
+  }
+};
 
 const getPortalForMember = async ({ portalId, userId }) => {
   if (!mongoose.Types.ObjectId.isValid(portalId)) {
@@ -187,8 +203,9 @@ const teamActivityService = {
     });
 
     const populated = await teamActivityRepository.findById(activity._id);
+    const synchronized = await syncActivityToGoogle(populated);
 
-    return mapActivity(populated);
+    return mapActivity(synchronized);
   },
 
   update: async ({ portalId, activityId, userId, activityData }) => {
@@ -234,7 +251,8 @@ const teamActivityService = {
     }
 
     const updated = await teamActivityRepository.updateById(activityId, nextData);
-    return mapActivity(updated);
+    const synchronized = await syncActivityToGoogle(updated);
+    return mapActivity(synchronized);
   },
 
   remove: async ({ portalId, activityId, userId }) => {
@@ -248,9 +266,59 @@ const teamActivityService = {
     }
 
     assertCanManageActivity({ portal, activity, userId });
+    try {
+      await googleCalendarService.deleteEvent({
+        portalId: activity.portal,
+        googleEventId: activity.googleEventId,
+      });
+    } catch (error) {
+      console.error('[google-calendar] No se pudo eliminar el evento sincronizado', {
+        activityId: activity?._id?.toString?.(),
+        message: error.message,
+      });
+    }
     await teamActivityRepository.deleteById(activityId);
 
     return { id: activityId };
+  },
+
+  listGoogleEvents: async ({ portalId, userId, startDate, endDate }) => {
+    await getPortalForMember({ portalId, userId });
+    return googleCalendarService.listExternalEvents({ portalId, startDate, endDate });
+  },
+
+  syncGoogleEvents: async ({ portalId, userId, startDate, endDate }) => {
+    await getPortalForMember({ portalId, userId });
+
+    if (!googleCalendarService.isConfigured() || googleCalendarService.status().portalId !== String(portalId)) {
+      return { configured: false, synchronized: 0, failed: 0 };
+    }
+
+    const activities = await teamActivityRepository.findByPortal({
+      portalId,
+      startDate: parseRangeDate(startDate),
+      endDate: parseRangeDate(endDate, true),
+    });
+    let synchronized = 0;
+    let failed = 0;
+
+    for (const activity of activities) {
+      try {
+        const googleEventId = await googleCalendarService.syncActivity(activity);
+        if (googleEventId && googleEventId !== activity.googleEventId) {
+          await teamActivityRepository.updateById(activity._id, { googleEventId });
+        }
+        synchronized += 1;
+      } catch (error) {
+        failed += 1;
+        console.error('[google-calendar] No se pudo sincronizar una actividad existente', {
+          activityId: activity?._id?.toString?.(),
+          message: error.message,
+        });
+      }
+    }
+
+    return { configured: true, synchronized, failed };
   },
 
   addComment: async ({ portalId, activityId, userId, message }) => {

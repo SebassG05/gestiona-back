@@ -50,6 +50,8 @@ router.get('/:portalId/members', authenticate, portalController.listMembers);
 router.get('/:portalId/favorites', authenticate, portalFavoriteController.list);
 router.put('/:portalId/favorites/:entityType/:entityId', authenticate, portalFavoriteController.set);
 router.get('/:portalId/team-activities', authenticate, teamActivityController.list);
+router.get('/:portalId/google-calendar/events', authenticate, teamActivityController.listGoogleEvents);
+router.post('/:portalId/google-calendar/sync', authenticate, teamActivityController.syncGoogleEvents);
 router.post('/:portalId/team-activities', authenticate, teamActivityController.create);
 router.patch('/:portalId/team-activities/:activityId', authenticate, teamActivityController.update);
 router.post(

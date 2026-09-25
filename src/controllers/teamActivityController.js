@@ -20,6 +20,45 @@ const teamActivityController = {
     }
   },
 
+  listGoogleEvents: async (req, res, next) => {
+    try {
+      const result = await teamActivityService.listGoogleEvents({
+        portalId: req.params.portalId,
+        userId: req.user.id,
+        startDate: req.query.startDate,
+        endDate: req.query.endDate,
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Eventos de Google Calendar recuperados correctamente',
+        configured: result.configured,
+        data: result.events,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  syncGoogleEvents: async (req, res, next) => {
+    try {
+      const result = await teamActivityService.syncGoogleEvents({
+        portalId: req.params.portalId,
+        userId: req.user.id,
+        startDate: req.query.startDate,
+        endDate: req.query.endDate,
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Actividades sincronizadas con Google Calendar',
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   create: async (req, res, next) => {
     try {
       const activity = await teamActivityService.create({
