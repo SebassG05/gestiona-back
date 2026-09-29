@@ -33,6 +33,7 @@ const teamActivityController = {
         success: true,
         message: 'Eventos de Google Calendar recuperados correctamente',
         configured: result.configured,
+        error: result.error || '',
         data: result.events,
       });
     } catch (error) {

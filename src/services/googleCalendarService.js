@@ -18,6 +18,27 @@ const isConfigured = () =>
       GOOGLE_CALENDAR_PRIVATE_KEY
   );
 
+const getConfigurationIssue = (portalId) => {
+  const missingVariables = [
+    ['GOOGLE_CALENDAR_ID', GOOGLE_CALENDAR_ID],
+    ['GOOGLE_CALENDAR_PORTAL_ID', GOOGLE_CALENDAR_PORTAL_ID],
+    ['GOOGLE_CALENDAR_CLIENT_EMAIL', GOOGLE_CALENDAR_CLIENT_EMAIL],
+    ['GOOGLE_CALENDAR_PRIVATE_KEY', GOOGLE_CALENDAR_PRIVATE_KEY],
+  ]
+    .filter(([, value]) => !value)
+    .map(([name]) => name);
+
+  if (missingVariables.length > 0) {
+    return `Faltan variables de Google Calendar en el servidor: ${missingVariables.join(', ')}.`;
+  }
+
+  if (String(portalId) !== String(GOOGLE_CALENDAR_PORTAL_ID)) {
+    return 'Google Calendar esta configurado para otro portal.';
+  }
+
+  return '';
+};
+
 const isEnabledForPortal = (portalId) =>
   isConfigured() && String(portalId) === String(GOOGLE_CALENDAR_PORTAL_ID);
 
@@ -197,7 +218,10 @@ const googleCalendarService = {
   }),
 
   listExternalEvents: async ({ portalId, startDate, endDate }) => {
-    if (!isEnabledForPortal(portalId)) return { configured: false, events: [] };
+    const configurationIssue = getConfigurationIssue(portalId);
+    if (configurationIssue) {
+      return { configured: false, events: [], error: configurationIssue };
+    }
 
     const events = await getEvents({ startDate, endDate });
     return {
