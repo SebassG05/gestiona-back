@@ -29,6 +29,14 @@ const normalizeCell = (value) => {
   return String(value).trim();
 };
 
+const hasRowContent = (values) =>
+  values.some((value) => {
+    if (value === null || value === undefined) return false;
+    if (typeof value === 'number' || typeof value === 'boolean') return true;
+    const normalizedValue = String(value).trim();
+    return normalizedValue !== '' && !/^-+$/.test(normalizedValue);
+  });
+
 const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const normalizeCategory = (category) =>
   category === 'contacts' ? 'contacts' : 'opportunities';
@@ -417,9 +425,9 @@ const opportunityWorkbookService = {
       .map((header, index) => ({ header: String(header || '').trim(), index }))
       .filter(({ header }) => header);
     const headers = namedColumnIndexes.map(({ header }) => header);
-    const normalizedRows = data.rows.map((row) =>
-      namedColumnIndexes.map(({ index }) => normalizeCell(row[index]))
-    );
+    const normalizedRows = data.rows
+      .map((row) => namedColumnIndexes.map(({ index }) => normalizeCell(row[index])))
+      .filter(hasRowContent);
 
     if (data.targetWorkbookId) {
       const targetWorkbook = await opportunityWorkbookRepository.findByIdAndPortal(
