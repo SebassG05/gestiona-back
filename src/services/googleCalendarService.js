@@ -92,6 +92,16 @@ const addDays = (value, amount) => {
   return date.toISOString().slice(0, 10);
 };
 
+const formatEventTime = (value) => {
+  if (!value) return '';
+
+  return new Intl.DateTimeFormat('es-ES', {
+    timeZone: GOOGLE_CALENDAR_TIME_ZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value));
+};
+
 const getActivityDate = (value) => {
   const source = value instanceof Date ? value : new Date(value);
   return toDateOnly(source) || new Date().toISOString().slice(0, 10);
@@ -156,6 +166,8 @@ const mapGoogleEvent = (event) => {
   const endDate = isAllDay
     ? addDays(event.end?.date || startDate, -1)
     : startDate;
+  const startTime = isAllDay ? '' : formatEventTime(event.start?.dateTime);
+  const endTime = isAllDay ? '' : formatEventTime(event.end?.dateTime);
 
   return {
     id: `google-${event.id}`,
@@ -165,6 +177,10 @@ const mapGoogleEvent = (event) => {
     description: event.description || '',
     workDate: startDate,
     endDate,
+    isAllDay,
+    startTime,
+    endTime,
+    timeLabel: isAllDay ? 'Todo el día' : `${startTime}${endTime ? ` - ${endTime}` : ''}`,
     color: '#4285f4',
     googleUrl: event.htmlLink || '',
   };
