@@ -113,3 +113,16 @@ export const reorderOpportunityWorkbooksValidation = [
     .isMongoId()
     .withMessage('Uno de los Excel no es valido'),
 ];
+
+export const mergeContactWorkbooksValidation = [
+  body('sourceWorkbookId').isMongoId().withMessage('El Excel origen no es valido'),
+  body('targetWorkbookId')
+    .isMongoId()
+    .withMessage('El Excel destino no es valido')
+    .custom((value, { req }) => {
+      if (String(value) === String(req.body.sourceWorkbookId)) {
+        throw new Error('El Excel origen y destino deben ser distintos');
+      }
+      return true;
+    }),
+];

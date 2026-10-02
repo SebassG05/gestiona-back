@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import portalController from '../controllers/portalController.js';
+import proposalValuationController from '../controllers/proposalValuationController.js';
 import portalExcelController from '../controllers/portalExcelController.js';
 import opportunityWorkbookController from '../controllers/opportunityWorkbookController.js';
 import opportunityConceptNoteController from '../controllers/opportunityConceptNoteController.js';
@@ -18,6 +19,7 @@ import {
   importOpportunityWorkbookValidation,
   linkedOpportunityContactsValidation,
   linkOpportunityContactsValidation,
+  mergeContactWorkbooksValidation,
   reorderOpportunityWorkbooksValidation,
   updateOpportunityContactTrackingValidation,
   updateOpportunityNoteValidation,
@@ -39,6 +41,11 @@ import {
 } from '../validations/proposalValidation.js';
 
 const router = Router();
+
+router.get('/:portalId/valuations', authenticate, proposalValuationController.list);
+router.post('/:portalId/valuations', authenticate, proposalValuationController.create);
+router.patch('/:portalId/valuations/:rowId', authenticate, proposalValuationController.update);
+router.delete('/:portalId/valuations/:rowId', authenticate, proposalValuationController.remove);
 
 router.get('/:portalId/proposals/:proposalId/control', authenticate, proposalControlController.get);
 router.put('/:portalId/proposals/:proposalId/control', authenticate, proposalControlController.save);
@@ -119,6 +126,13 @@ router.post(
   importOpportunityWorkbookValidation,
   validateRequest,
   opportunityWorkbookController.import
+);
+router.post(
+  '/:portalId/opportunity-workbooks/contacts/merge',
+  authenticate,
+  mergeContactWorkbooksValidation,
+  validateRequest,
+  opportunityWorkbookController.mergeContacts
 );
 router.post(
   '/:portalId/opportunity-workbooks/:workbookId/rows',

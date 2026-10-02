@@ -96,6 +96,24 @@ const opportunityWorkbookController = {
     }
   },
 
+  mergeContacts: async (req, res, next) => {
+    try {
+      const data = await opportunityWorkbookService.mergeContacts({
+        portalId: req.params.portalId,
+        userId: req.user.id,
+        sourceWorkbookId: req.body.sourceWorkbookId,
+        targetWorkbookId: req.body.targetWorkbookId,
+      });
+      return res.json({
+        success: true,
+        message: 'Los contactos se han unido correctamente',
+        data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   remove: async (req, res, next) => {
     try {
       const data = await opportunityWorkbookService.remove({

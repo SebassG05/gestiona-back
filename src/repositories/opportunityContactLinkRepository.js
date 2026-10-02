@@ -77,6 +77,26 @@ const opportunityContactLinkRepository = {
       { new: true, runValidators: true }
     ).lean(),
 
+  moveContactsToWorkbook: ({ portalId, sourceWorkbookId, targetWorkbookId, rowMappings }) =>
+    OpportunityContactLink.bulkWrite(
+      rowMappings.map(({ sourceRowId, targetRowId, contactSnapshot }) => ({
+        updateMany: {
+          filter: {
+            portal: portalId,
+            contactWorkbook: sourceWorkbookId,
+            contactRow: sourceRowId,
+          },
+          update: {
+            $set: {
+              contactWorkbook: targetWorkbookId,
+              contactRow: targetRowId,
+              contactSnapshot,
+            },
+          },
+        },
+      }))
+    ),
+
   findMeetingActivityIdsByWorkbook: ({ workbookId, portalId }) =>
     OpportunityContactLink.distinct('contactTracking.meetingActivity', {
       portal: portalId,

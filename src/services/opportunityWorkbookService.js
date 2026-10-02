@@ -41,6 +41,28 @@ const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$
 const normalizeCategory = (category) =>
   category === 'contacts' ? 'contacts' : 'opportunities';
 
+const isContactsWorkbook = (workbook) =>
+  workbook && (
+    workbook.category === 'contacts' ||
+    (!workbook.category && /contact/i.test(`${workbook.name || ''} ${workbook.sourceFileName || ''}`))
+  );
+
+const assertWorkbookManager = (
+  portal,
+  userId,
+  errorMessage = 'No tienes permiso para eliminar paginas de este portal'
+) => {
+  const canManage =
+    portal.owner.equals(userId) ||
+    (portal.workbookDeleteManagers || []).some((member) => member.equals(userId));
+
+  if (!canManage) {
+    const error = new Error(errorMessage);
+    error.statusCode = 403;
+    throw error;
+  }
+};
+
 const normalizeHeader = (value) =>
   String(value || '')
     .normalize('NFD')
@@ -434,10 +456,7 @@ const opportunityWorkbookService = {
         data.targetWorkbookId,
         portalId
       );
-      const targetIsContacts = targetWorkbook && (
-        targetWorkbook.category === 'contacts' ||
-        (!targetWorkbook.category && /contact/i.test(`${targetWorkbook.name || ''} ${targetWorkbook.sourceFileName || ''}`))
-      );
+      const targetIsContacts = isContactsWorkbook(targetWorkbook);
       if (!targetIsContacts) {
         const error = new Error('El Excel de contactos seleccionado no existe');
         error.statusCode = 404;
@@ -516,14 +535,102 @@ const opportunityWorkbookService = {
     };
   },
 
-  remove: async ({ portalId, workbookId, userId }) => {
+  mergeContacts: async ({ portalId, userId, sourceWorkbookId, targetWorkbookId }) => {
     const portal = await assertPortalAccess({ portalId, userId });
-    const canDelete = portal.owner.equals(userId) || (portal.workbookDeleteManagers || []).some((member) => member.equals(userId));
-    if (!canDelete) {
-      const error = new Error('No tienes permiso para eliminar paginas de este portal');
-      error.statusCode = 403;
+    assertWorkbookManager(portal, userId, 'No tienes permiso para unir Excel de contactos en este portal');
+
+    if (
+      !mongoose.Types.ObjectId.isValid(sourceWorkbookId) ||
+      !mongoose.Types.ObjectId.isValid(targetWorkbookId) ||
+      String(sourceWorkbookId) === String(targetWorkbookId)
+    ) {
+      const error = new Error('Selecciona dos Excel de contactos distintos');
+      error.statusCode = 400;
       throw error;
     }
+
+    const [sourceWorkbook, targetWorkbook] = await Promise.all([
+      opportunityWorkbookRepository.findByIdAndPortal(sourceWorkbookId, portalId),
+      opportunityWorkbookRepository.findByIdAndPortal(targetWorkbookId, portalId),
+    ]);
+
+    if (!isContactsWorkbook(sourceWorkbook) || !isContactsWorkbook(targetWorkbook)) {
+      const error = new Error('Solo se pueden unir Excel de contactos del mismo portal');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const sourceRows = await opportunityWorkbookRepository.listRows(sourceWorkbookId, portalId);
+    const mergedHeaders = [...(targetWorkbook.headers || [])];
+    const headerIndex = new Map(
+      mergedHeaders.map((header, index) => [normalizeHeader(header), index])
+    );
+    (sourceWorkbook.headers || []).forEach((header) => {
+      const key = normalizeHeader(header);
+      if (!headerIndex.has(key)) {
+        headerIndex.set(key, mergedHeaders.length);
+        mergedHeaders.push(header);
+      }
+    });
+
+    const lastRow = await opportunityWorkbookRepository.getLastRow(targetWorkbookId, portalId);
+    const nextRowNumber = lastRow?.rowNumber || targetWorkbook.headerRow || 1;
+    const mergedRows = sourceRows.map((sourceRow) => {
+      const values = mergedHeaders.map(() => null);
+      (sourceWorkbook.headers || []).forEach((header, index) => {
+        values[headerIndex.get(normalizeHeader(header))] = sourceRow.values?.[index] ?? null;
+      });
+      return values;
+    });
+    const createdRows = mergedRows.length
+      ? await opportunityWorkbookRepository.createRows(
+          mergedRows.map((values, index) => ({
+            portal: portalId,
+            workbook: targetWorkbook._id,
+            rowNumber: nextRowNumber + index + 1,
+            values,
+          }))
+        )
+      : [];
+
+    const targetWorkbookWithMergedHeaders = { ...targetWorkbook, headers: mergedHeaders };
+    const rowMappings = sourceRows.map((sourceRow, index) => {
+      const targetRow = createdRows[index];
+      return {
+        sourceRowId: sourceRow._id,
+        targetRowId: targetRow._id,
+        contactSnapshot: buildRowSnapshot({ ...targetRow.toObject(), workbook: targetWorkbookWithMergedHeaders }),
+      };
+    });
+
+    if (rowMappings.length) {
+      await opportunityContactLinkRepository.moveContactsToWorkbook({
+        portalId,
+        sourceWorkbookId,
+        targetWorkbookId,
+        rowMappings,
+      });
+    }
+
+    const updatedWorkbook = await opportunityWorkbookRepository.updateWorkbookAfterMerge({
+      workbookId: targetWorkbookId,
+      portalId,
+      headers: mergedHeaders,
+      rowCount: createdRows.length,
+    });
+    await opportunityWorkbookRepository.deleteRows(sourceWorkbookId, portalId);
+    await opportunityWorkbookRepository.deleteWorkbook(sourceWorkbookId, portalId);
+
+    return {
+      sourceWorkbook: { id: sourceWorkbook._id.toString(), name: sourceWorkbook.name },
+      targetWorkbook: updatedWorkbook,
+      movedRows: createdRows.length,
+    };
+  },
+
+  remove: async ({ portalId, workbookId, userId }) => {
+    const portal = await assertPortalAccess({ portalId, userId });
+    assertWorkbookManager(portal, userId);
     const workbook = await opportunityWorkbookRepository.findByIdAndPortal(
       workbookId,
       portalId
