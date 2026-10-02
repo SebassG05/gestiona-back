@@ -11,6 +11,7 @@ const schema = new mongoose.Schema({
   impact: score,
   quality: score,
   total: { type: Number, default: null, min: 0, max: 15 },
+  expectedEvaluation: { type: String, default: '', maxlength: 1000 },
   call: { type: String, default: '', maxlength: 500 },
   folder: { type: String, default: '', maxlength: 250 },
   notes: { type: String, default: '', maxlength: 10000 },

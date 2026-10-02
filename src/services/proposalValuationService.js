@@ -5,7 +5,7 @@ import portalRepository from '../repositories/portalRepository.js';
 import repository from '../repositories/proposalValuationRepository.js';
 
 const workbook = JSON.parse(readFileSync(new URL('../data/proposalValuations.json', import.meta.url), 'utf8'));
-const seeds = new Map(workbook.rows.map((row) => [row.id, row]));
+const seeds = new Map(workbook.rows.map((row) => [row.id, { expectedEvaluation: '', ...row }]));
 const fail = (message, statusCode = 400) => Object.assign(new Error(message), { statusCode });
 const idOf = (value) => String(value?._id || value);
 
@@ -21,7 +21,7 @@ const authorize = async ({ portalId, userId }) => {
 export const normalizeValuation = (data) => {
   if (!data || typeof data !== 'object' || Array.isArray(data)) throw fail('Valoración no válida');
   const result = {};
-  for (const [field, max] of Object.entries({ proposal: 250, summary: 10000, call: 500, folder: 250, notes: 10000 })) {
+  for (const [field, max] of Object.entries({ proposal: 250, summary: 10000, expectedEvaluation: 1000, call: 500, folder: 250, notes: 10000 })) {
     const value = data[field] ?? '';
     if (typeof value !== 'string' || value.length > max) throw fail(`El campo ${field} no es válido`);
     result[field] = value.trim();
@@ -50,6 +50,7 @@ export const normalizeValuation = (data) => {
 
 const mapRow = (row) => ({
   id: row.rowId,
+  expectedEvaluation: row.expectedEvaluation ?? '',
   ...Object.fromEntries(['proposal', 'year', 'summary', 'excellence', 'impact', 'quality', 'total', 'call', 'folder', 'notes'].map((field) => [field, row[field]])),
 });
 

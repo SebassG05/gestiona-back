@@ -71,6 +71,43 @@ describe('Proposal valuations', () => {
     expect(repository.save).toHaveBeenCalledWith(portalId, 'excel-2', expect.objectContaining({ quality: 5 }));
   });
 
+  test('saves the expected evaluation on creation and returns it when reloading', async () => {
+    const created = await service.create(context, { ...input, expectedEvaluation: '  Resultados en noviembre; previsión de 12 puntos.  ' });
+    const stored = repository.create.mock.calls[0][0];
+    expect(created.expectedEvaluation).toBe('Resultados en noviembre; previsión de 12 puntos.');
+    expect(created.total).toBe(11.16);
+    const document = new ProposalValuation(stored);
+    await expect(document.validate()).resolves.toBeUndefined();
+    expect(document.expectedEvaluation).toBe(created.expectedEvaluation);
+    repository.list.mockResolvedValue([stored]);
+    expect((await service.list(context)).rows).toContainEqual(created);
+  });
+
+  test('updates, preserves and clears expected evaluations on imported rows', async () => {
+    const updated = await service.update(context, 'excel-2', { expectedEvaluation: 'Diciembre de 2026' });
+    expect(updated.expectedEvaluation).toBe('Diciembre de 2026');
+    repository.list.mockResolvedValue([{ ...updated, rowId: updated.id }]);
+    const reloaded = await service.list(context);
+    expect(reloaded.rows).toHaveLength(85);
+    expect(reloaded.rows.find((row) => row.id === 'excel-2').expectedEvaluation).toBe('Diciembre de 2026');
+    repository.find.mockResolvedValue({ ...updated, rowId: updated.id });
+    expect((await service.update(context, 'excel-2', { notes: 'Nota nueva' })).expectedEvaluation).toBe('Diciembre de 2026');
+    expect((await service.update(context, 'excel-2', { expectedEvaluation: '' })).expectedEvaluation).toBe('');
+    repository.list.mockResolvedValue([]);
+    expect((await service.list(context)).rows.find((row) => row.id === 'excel-2').expectedEvaluation).toBe('');
+  });
+
+  test('defaults expected evaluations to empty for existing records', async () => {
+    repository.list.mockResolvedValue([{ ...input, rowId: 'legacy-row' }]);
+    const { rows } = await service.list(context);
+    expect(rows.every((row) => row.expectedEvaluation === '')).toBe(true);
+    expect(normalizeValuation(input).expectedEvaluation).toBe('');
+  });
+
+  test.each([{}, [], 12, 'x'.repeat(1001)])('rejects invalid expected evaluations (%#)', (expectedEvaluation) => {
+    expect(() => normalizeValuation({ ...input, expectedEvaluation })).toThrow();
+  });
+
   test('rejects a row belonging to a different portal', async () => {
     await expect(service.update(context, 'other-portal-row', input)).rejects.toMatchObject({ statusCode: 404 });
     expect(repository.find).toHaveBeenCalledWith(portalId, 'other-portal-row');
